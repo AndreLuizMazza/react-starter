@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    { "name": "Dev (Vite + BFF)", "configurations": ["BFF", "Chrome"] }
+  ],
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "BFF",
+      "program": "${workspaceFolder}/server/index.js",
+      "envFile": "${workspaceFolder}/.env",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "chrome",                 // <-- trocado de pwa-chrome para chrome
+      "request": "launch",
+      "name": "Chrome",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true
+    }
+  ]
+}
