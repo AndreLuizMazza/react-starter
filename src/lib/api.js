@@ -4,8 +4,13 @@ import axios from 'axios'
 let tokenProvider = null
 export function setAuthTokenProvider(fn) { tokenProvider = fn }
 
+// usa a URL do BFF da env e remove barra(s) final(is); fallback local
+const baseURL = (import.meta.env.VITE_BFF_BASE || 'http://localhost:8787').replace(/\/+$/, '')
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BFF_BASE || 'http://localhost:8787',
+  baseURL,
+  timeout: 20000,
+  headers: { Accept: 'application/json' },
 })
 
 api.interceptors.request.use((cfg) => {
