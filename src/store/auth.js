@@ -15,14 +15,18 @@ const useAuth = create(persist((set, get) => ({
   clientToken: null,
   clientExp: 0,
 
-  /** Melhor token disponível para requisições (prioriza usuário) */
   getAuthToken: () => {
     const u = get().user
     if (u?.accessToken) return u.accessToken
     return get().clientToken
   },
 
-  /** Garante token de CLIENTE para boot/endpoints públicos */
+  // helper pra usar no app inteiro
+  isLogged: () => {
+    const u = get().user
+    return Boolean(u && (u.id || u.userId || u.cpf || u.email || u.accessToken))
+  },
+
   ensureClientToken: async () => {
     const now = Math.floor(Date.now()/1000)
     const { clientToken, clientExp } = get()
@@ -37,7 +41,6 @@ const useAuth = create(persist((set, get) => ({
     return get().clientToken
   },
 
-  /** LOGIN (apenas altera estado; quem chama redireciona com useNavigate) */
   login: async (identificador, senha) => {
     await get().ensureClientToken()
     const { data } = await api.post(
@@ -45,18 +48,47 @@ const useAuth = create(persist((set, get) => ({
       { identificador, senha },
       { headers: { 'X-Device-ID': getDeviceId() } }
     )
-    set({ user: data })
-    return data
+
+    // normaliza para sempre ter accessToken no mesmo campo
+    const accessToken = data?.access_token || data?.accessToken || data?.token || null
+    const user = {
+      accessToken,
+      id: data?.id || data?.userId || null,
+      cpf: data?.cpf || null,
+      nome: data?.nome || data?.name || data?.usuario || null,
+      email: data?.email || null,
+    }
+    set({ user })
+    return user
   },
 
-  /** LOGOUT */
-  logout: () => set({ user: null, clientToken: null, clientExp: 0 }),
+  logout: () => {
+    // mantém o clientToken pra telas públicas funcionarem
+    set({ user: null })
+  },
 }), {
   name: 'auth',
   storage: createJSONStorage(() => localStorage),
+
+  // ✔️ migração: se vier user sem identificadores, zera
+  version: 2,
+  migrate: (state, version) => {
+    if (!state) return state
+    const u = state.user
+    if (u && !(u.id || u.userId || u.cpf || u.email || u.accessToken)) {
+      state.user = null
+    }
+    return state
+  },
+
+  // ✔️ sanitiza imediatamente após rehidratar
+  onRehydrateStorage: () => (state) => {
+    const u = state?.user
+    if (u && !(u.id || u.userId || u.cpf || u.email || u.accessToken)) {
+      state.user = null
+    }
+  },
 }))
 
-/** Entrega o token atual para o interceptor do axios */
 setAuthTokenProvider(() => useAuth.getState().getAuthToken())
-
 export default useAuth

@@ -1,7 +1,7 @@
 // src/App.jsx
 import { Routes, Route, Navigate } from 'react-router-dom'
 
-import './styles/theme.css'                 // CSS do tema (caminho relativo)
+import './styles/theme.css' // CSS do tema (caminho relativo)
 
 import TenantBootstrapper from '@/components/TenantBootstrapper'
 
@@ -16,6 +16,12 @@ import AreaUsuario from './pages/AreaUsuario.jsx'
 import Pagamentos from './pages/Pagamentos.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import ClubeBeneficios from './pages/ClubeBeneficios.jsx'
+import PoliticaCookies from "@/pages/PoliticaCookies"
+import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade"
+import TermosUso from "@/pages/TermosUso"
+
+// importar o banner
+import CookieBanner from '@/components/CookieBanner.jsx'
 
 export default function App() {
   return (
@@ -34,6 +40,9 @@ export default function App() {
           <Route path="/contratos" element={<ContratoPage />} />
           <Route path="/contratos/:id/pagamentos" element={<Pagamentos />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/politica-cookies" element={<PoliticaCookies />} />
+          <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/termos-uso" element={<TermosUso />} />
           <Route
             path="/area"
             element={
@@ -45,6 +54,9 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {/* Banner de cookies sempre ativo */}
+      <CookieBanner />
 
       <Footer />
     </div>

@@ -1,4 +1,7 @@
-import { Link, NavLink } from 'react-router-dom'
+// src/components/Navbar.jsx
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Menu, X } from 'lucide-react'
 import useAuth from '@/store/auth'
 import useTenant from '@/store/tenant'
 
@@ -9,11 +12,28 @@ export default function Navbar(){
 
   const nome = empresa?.nomeFantasia || 'Progem Starter'
   const logo = empresa?.urlLogo
+  const isLogged = !!user?.accessToken
+
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const location = useLocation()
+  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+
+  // Classe para links
+  const linkClass = ({ isActive }) =>
+    "relative pl-4 pr-3 py-2 flex items-center rounded-md transition-colors duration-150 " +
+    (isActive
+      ? "text-primary font-semibold bg-primary/5"
+      : "text-slate-600 hover:text-primary hover:bg-slate-50")
+
+  const ActiveBar = ({ isActive }) =>
+    isActive ? (
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded bg-primary" />
+    ) : null
 
   return (
-    <header className="w-full border-b bg-white sticky top-0 z-40">
+    <header className="w-full border-b bg-white sticky top-0 z-40 shadow-sm">
       <div className="container-max flex items-center justify-between py-3 gap-4">
-        {/* Só a logomarca (nome fica oculto para acessibilidade) */}
+        {/* Logo */}
         <Link to="/" className="flex items-center h-8">
           {logo ? (
             <>
@@ -30,18 +50,136 @@ export default function Navbar(){
           )}
         </Link>
 
-        <nav className="flex items-center gap-4 text-sm">
-          <NavLink to="/planos" className="hover:underline">Planos</NavLink>
-          <NavLink to="/beneficios" className="hover:underline">Benefícios</NavLink>
-          <NavLink to="/contratos" className="hover:underline">Contratos</NavLink>
-          <NavLink to="/area" className="hover:underline">Área</NavLink>
-          {user ? (
-            <button className="btn-primary" onClick={logout}>Sair</button>
+        {/* Navegação desktop */}
+        <nav className="hidden md:flex items-center gap-4 text-sm">
+          <NavLink to="/" className={linkClass} end>
+            {({ isActive }) => <>
+              <ActiveBar isActive={isActive} /> Home
+            </>}
+          </NavLink>
+
+          <NavLink to="/planos" className={linkClass}>
+            {({ isActive }) => <>
+              <ActiveBar isActive={isActive} /> Planos
+            </>}
+          </NavLink>
+
+          <NavLink to="/beneficios" className={linkClass}>
+            {({ isActive }) => <>
+              <ActiveBar isActive={isActive} /> Clube de Benefícios
+            </>}
+          </NavLink>
+
+          <NavLink to="/memorial" className={linkClass}>
+            {({ isActive }) => <>
+              <ActiveBar isActive={isActive} /> Memorial
+            </>}
+          </NavLink>
+
+          {isLogged ? (
+            <NavLink to="/area" className={linkClass}>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Área do associado
+              </>}
+            </NavLink>
           ) : (
-            <Link to="/login" className="btn-primary">Login</Link>
+            <NavLink to="/login" className={linkClass}>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Área do associado
+              </>}
+            </NavLink>
+          )}
+
+          {isLogged ? (
+            <button
+              type="button"
+              onClick={logout}
+              className="ml-2 text-slate-600 hover:text-primary px-3 py-1 rounded-md"
+              title="Sair"
+            >
+              Sair
+            </button>
+          ) : (
+            <NavLink to="/login" className={linkClass}>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Login
+              </>}
+            </NavLink>
           )}
         </nav>
+
+        {/* Botão hambúrguer (mobile) */}
+        <button
+          className="md:hidden inline-flex items-center justify-center rounded-lg border px-3 py-2"
+          aria-label="Abrir menu"
+          aria-controls="mobile-menu"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen(v => !v)}
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
+
+      {/* Menu mobile */}
+      {mobileOpen && (
+        <div id="mobile-menu" className="md:hidden border-t bg-white">
+          <div className="container-max py-2 flex flex-col text-sm space-y-1">
+            <NavLink to="/" className={linkClass} end>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Home
+              </>}
+            </NavLink>
+
+            <NavLink to="/planos" className={linkClass}>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Planos
+              </>}
+            </NavLink>
+
+            <NavLink to="/beneficios" className={linkClass}>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Clube de Benefícios
+              </>}
+            </NavLink>
+
+            <NavLink to="/memorial" className={linkClass}>
+              {({ isActive }) => <>
+                <ActiveBar isActive={isActive} /> Memorial
+              </>}
+            </NavLink>
+
+            {isLogged ? (
+              <NavLink to="/area" className={linkClass}>
+                {({ isActive }) => <>
+                  <ActiveBar isActive={isActive} /> Área do associado
+                </>}
+              </NavLink>
+            ) : (
+              <NavLink to="/login" className={linkClass}>
+                {({ isActive }) => <>
+                  <ActiveBar isActive={isActive} /> Área do associado
+                </>}
+              </NavLink>
+            )}
+
+            {isLogged ? (
+              <button
+                type="button"
+                onClick={logout}
+                className="text-left pl-4 pr-2 py-3 text-slate-600 hover:text-primary rounded-md"
+              >
+                Sair
+              </button>
+            ) : (
+              <NavLink to="/login" className={linkClass}>
+                {({ isActive }) => <>
+                  <ActiveBar isActive={isActive} /> Login
+                </>}
+              </NavLink>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

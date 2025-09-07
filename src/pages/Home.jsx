@@ -56,7 +56,7 @@ export default function Home(){
             cta="Ver parceiros"
           />
           <Card
-            title="Contratos por CPF"
+            title="Segunda via do Boleto sem senha"
             desc="Pesquise contratos e situação de cobrança."
             to="/contratos"
             cta="Pesquisar"
@@ -72,7 +72,7 @@ export default function Home(){
             />
           ) : (
             <Card
-              title="Login"
+              title="Área do Associado"
               desc="Acesse a área do usuário para ver seus dados."
               to="/login"
               cta="Entrar"
