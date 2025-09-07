@@ -19,3 +19,808 @@
 }
 .btn-primary:hover{ background-color: var(--brand-primary-hover); }
 .btn-primary:focus{ outline: none; box-shadow: 0 0 0 4px var(--brand-primary-ring); }
+
+/* ===== Home blobs (respeita prefers-reduced-motion) ===== */
+.home-blob{
+  position:absolute; inset:0;
+  animation:home-drift 18s ease-in-out infinite;
+  opacity:.9;
+}
+.home-blob.delay-300{ animation-delay:300ms; }
+@keyframes home-drift{
+  0%{ transform:translateY(-6px) }
+  50%{ transform:translateY(6px) }
+  100%{ transform:translateY(-6px) }
+}
+@media (prefers-reduced-motion: reduce){
+  .home-blob{ animation:none }
+}
+
+/* ===== Tilt suave nos cards (sem exagero) ===== */
+.tilt{ transform-style:preserve-3d; }
+.tilt:hover{ transform: translateY(-3px) rotateX(.6deg) rotateY(-.6deg); }
+@media (prefers-reduced-motion: reduce){
+  .tilt:hover{ transform:none }
+}
+
+/* ===== Prefer dark: ajustes suaves ===== */
+:root { color-scheme: light dark; }
+
+@media (prefers-color-scheme: dark){
+  body { background-color:#0b1220; color:#e5e7eb; }
+  /* cartões e contornos */
+  .card{
+    background:rgba(255,255,255,.04);
+    border-color:rgba(255,255,255,.12);
+  }
+  /* textos neutros */
+  .section .text-slate-600{ color:#b3b8c6; }
+  /* pílulas */
+  .value-pill{
+    background:rgba(255,255,255,.08) !important;
+    color:#e5e7eb !important;
+    border-color:rgba(255,255,255,.12) !important;
+  }
+  /* hover dos cards */
+  .card:hover{ background:rgba(255,255,255,.06); }
+  /* blobs mais discretos */
+  .home-blob{ opacity:.55; }
+
+  /* borda de componentes neutros (botões ghost, etc) */
+  .ring-slate-200{ --tw-ring-color: rgba(255,255,255,.16); }
+}
+
+/* ===== Blobs (respeita motion) ===== */
+.home-blob{ position:absolute; inset:0; animation:home-drift 18s ease-in-out infinite; opacity:.9; }
+.home-blob.delay-300{ animation-delay:300ms; }
+@keyframes home-drift{
+  0%{ transform:translateY(-6px) } 50%{ transform:translateY(6px) } 100%{ transform:translateY(-6px) }
+}
+@media (prefers-reduced-motion: reduce){ .home-blob{ animation:none } }
+
+/* ===== Tilt suave nos cards ===== */
+.tilt{ transform-style:preserve-3d; }
+.tilt:hover{ transform: translateY(-3px) rotateX(.6deg) rotateY(-.6deg); }
+@media (prefers-reduced-motion: reduce){ .tilt:hover{ transform:none } }
+
+/* ===== Mini-FAQ ===== */
+.faq-item{
+  border:1px solid rgba(15,23,42,.08);
+  background:#fff;
+  border-radius:16px;
+  padding:10px 14px;
+}
+.faq-summary{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  cursor:pointer; list-style:none;
+}
+.faq-summary::-webkit-details-marker{ display:none; }
+.faq-content{ padding:10px 2px 2px; color:#475569; font-size:.95rem; }
+.faq-item .chev{ transition:transform .2s ease; }
+.faq-item[open] .chev{ transform:rotate(180deg); }
+@media (prefers-color-scheme: dark){
+  .faq-item{ background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); }
+  .faq-content{ color:#b3b8c6; }
+}
+
+/* ========== Overrides manuais pelo usuário ========== */
+/* Força DARK quando body.theme-dark estiver presente */
+body.theme-dark { color-scheme: dark; background-color:#0b1220; color:#e5e7eb; }
+body.theme-dark .card{ background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); }
+body.theme-dark .section .text-slate-600{ color:#b3b8c6; }
+body.theme-dark .value-pill{
+  background:rgba(255,255,255,.08) !important;
+  color:#e5e7eb !important;
+  border-color:rgba(255,255,255,.12) !important;
+}
+body.theme-dark .card:hover{ background:rgba(255,255,255,.06); }
+body.theme-dark .home-blob{ opacity:.55; }
+body.theme-dark .ring-slate-200{ --tw-ring-color: rgba(255,255,255,.16); }
+
+/* Força LIGHT quando body.theme-light estiver presente (mesmo se o SO estiver em dark) */
+body.theme-light { color-scheme: light; background:#fff; color:#0f172a; }
+body.theme-light .card{ background:#fff !important; border-color:rgba(15,23,42,.08) !important; }
+body.theme-light .section .text-slate-600{ color:#475569 !important; }
+body.theme-light .value-pill{
+  background:#f1f5f9 !important; color:#334155 !important; border-color:rgba(15,23,42,.08) !important;
+}
+body.theme-light .card:hover{ background:#f8fafc !important; }
+body.theme-light .home-blob{ opacity:.9 !important; }
+
+/* ====== DARK READABILITY UPGRADE ====== */
+/* Aplica tanto quando o SO estiver em dark quanto quando o usuário forçar o dark */
+@media (prefers-color-scheme: dark){
+  /* Fundo e cartões com contraste confortável */
+  body { background-color:#0b1220; color:#e7edf6; } /* texto base levemente mais claro */
+  .card{
+    background:#111827;                 /* +claro que #0b1220 para separar do fundo */
+    border-color:rgba(255,255,255,.14); /* borda visível */
+  }
+  .card:hover{ background:#132036; }     /* hover leve */
+  .section .text-slate-600{ color:#c9d5e1; } /* textos secundários ficam mais legíveis */
+  .text-slate-600{ color:#c9d5e1 !important; }
+
+  /* Separadores e linhas */
+  hr, .divide-y > * + *{
+    border-color: rgba(255,255,255,.12) !important;
+  }
+
+  /* Inputs / selects / textareas */
+  .input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    background:#0f172a !important;             /* painel um pouco mais escuro que a .card */
+    border:1px solid rgba(255,255,255,.16) !important;
+    color:#e7edf6 !important;
+  }
+  .input::placeholder,
+  input::placeholder,
+  textarea::placeholder { color:#9fb0c2 !important; } /* placeholder visível */
+
+  /* Focus states (mais visível no dark) */
+  .input:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none !important;
+    border-color:#60a5fa !important;           /* azul de foco */
+    box-shadow: 0 0 0 2px rgba(96,165,250,.35) !important;
+  }
+
+  /* Listas/painéis laterais de “parcelas”: use caixas um pouco mais claras */
+  .card .card,
+  .subcard,
+  .list-row {
+    background:#0f1b2d;
+    border-color: rgba(255,255,255,.14);
+  }
+
+  /* Badges genéricas – base mais clara */
+  .badge, .tag, .chip {
+    background: rgba(255,255,255,.08);
+    color: #e7edf6;
+    border: 1px solid rgba(255,255,255,.14);
+  }
+  /* Sucesso / aviso / erro mais legíveis no dark */
+  .badge-success, .tag-success, .chip-success {
+    background:#064e3b;    /* verde escuro */
+    color:#c7f9e0;
+    border-color:#0f766e;
+  }
+  .badge-warning, .tag-warning, .chip-warning {
+    background:#4a3000;    /* âmbar escuro */
+    color:#fde68a;
+    border-color:#a16207;
+  }
+  .badge-danger, .tag-danger, .chip-danger {
+    background:#3f1d1d;    /* vermelho escuro */
+    color:#fecaca;
+    border-color:#b91c1c;
+  }
+
+  /* Tabelas (se houver) */
+  table thead th{
+    background:#0f1b2d;
+    color:#e7edf6;
+    border-bottom:1px solid rgba(255,255,255,.14);
+  }
+  table tbody td{
+    border-top:1px solid rgba(255,255,255,.08);
+  }
+
+  /* Placeholders de selects (caret/arrow) */
+  select { background-image: none; } /* evita ícone cinza de baixa visibilidade */
+}
+
+/* Quando o usuário força DARK pelo toggle (classe theme-dark no <body> ou <html>) */
+body.theme-dark, html.theme-dark {
+  color-scheme: dark;
+  background-color:#0b1220; color:#e7edf6;
+}
+body.theme-dark .card, html.theme-dark .card{ background:#111827; border-color:rgba(255,255,255,.14); }
+body.theme-dark .card:hover, html.theme-dark .card:hover{ background:#132036; }
+body.theme-dark .section .text-slate-600, html.theme-dark .section .text-slate-600{ color:#c9d5e1; }
+body.theme-dark .text-slate-600, html.theme-dark .text-slate-600{ color:#c9d5e1 !important; }
+body.theme-dark hr,
+html.theme-dark hr,
+body.theme-dark .divide-y > * + *,
+html.theme-dark .divide-y > * + *{ border-color: rgba(255,255,255,.12) !important; }
+
+body.theme-dark .input,
+html.theme-dark .input,
+body.theme-dark input[type="text"],
+html.theme-dark input[type="text"],
+body.theme-dark input[type="email"],
+html.theme-dark input[type="email"],
+body.theme-dark input[type="password"],
+html.theme-dark input[type="password"],
+body.theme-dark input[type="number"],
+html.theme-dark input[type="number"],
+body.theme-dark input[type="search"],
+html.theme-dark input[type="search"],
+body.theme-dark select,
+html.theme-dark select,
+body.theme-dark textarea,
+html.theme-dark textarea{
+  background:#0f172a !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  color:#e7edf6 !important;
+}
+body.theme-dark .input::placeholder,
+html.theme-dark .input::placeholder,
+body.theme-dark input::placeholder,
+html.theme-dark input::placeholder,
+body.theme-dark textarea::placeholder,
+html.theme-dark textarea::placeholder{ color:#9fb0c2 !important; }
+body.theme-dark .input:focus,
+html.theme-dark .input:focus,
+body.theme-dark input:focus,
+html.theme-dark input:focus,
+body.theme-dark select:focus,
+html.theme-dark select:focus,
+body.theme-dark textarea:focus,
+html.theme-dark textarea:focus{
+  outline:none !important;
+  border-color:#60a5fa !important;
+  box-shadow:0 0 0 2px rgba(96,165,250,.35) !important;
+}
+body.theme-dark .badge, html.theme-dark .badge,
+body.theme-dark .tag, html.theme-dark .tag,
+body.theme-dark .chip, html.theme-dark .chip{
+  background: rgba(255,255,255,.08);
+  color: #e7edf6;
+  border: 1px solid rgba(255,255,255,.14);
+}
+body.theme-dark .badge-success, html.theme-dark .badge-success,
+body.theme-dark .tag-success, html.theme-dark .tag-success,
+body.theme-dark .chip-success, html.theme-dark .chip-success{
+  background:#064e3b; color:#c7f9e0; border-color:#0f766e;
+}
+body.theme-dark .badge-warning, html.theme-dark .badge-warning,
+body.theme-dark .tag-warning, html.theme-dark .tag-warning,
+body.theme-dark .chip-warning, html.theme-dark .chip-warning{
+  background:#4a3000; color:#fde68a; border-color:#a16207;
+}
+body.theme-dark .badge-danger, html.theme-dark .badge-danger,
+body.theme-dark .tag-danger, html.theme-dark .tag-danger,
+body.theme-dark .chip-danger, html.theme-dark .chip-danger{
+  background:#3f1d1d; color:#fecaca; border-color:#b91c1c;
+}
+
+/* ====== AJUSTES FINOS DE LEGIBILIDADE (DARK) ====== */
+
+/* 1) Linhas/itens brancos com borda arredondada (FAQ/accordions/etc.) */
+@media (prefers-color-scheme: dark) {
+  .rounded-xl.bg-white,
+  .rounded-lg.bg-white {
+    background: #0f172a !important;           /* tom próximo dos inputs no dark */
+    border-color: rgba(255,255,255,.16) !important;
+    color: #e7edf6 !important;
+  }
+  /* texto interno menos "lavado" */
+  .rounded-xl.bg-white .text-slate-500,
+  .rounded-xl.bg-white .text-slate-600,
+  .rounded-lg.bg-white .text-slate-500,
+  .rounded-lg.bg-white .text-slate-600 {
+    color:#c9d5e1 !important;
+  }
+  /* carets/ícones de expandir */
+  .rounded-xl.bg-white svg,
+  .rounded-lg.bg-white svg {
+    opacity: .9;
+    color:#dbe7f5;
+  }
+}
+
+/* Se o usuário forçar dark pelo toggle (theme-dark) */
+body.theme-dark .rounded-xl.bg-white,
+html.theme-dark .rounded-xl.bg-white,
+body.theme-dark .rounded-lg.bg-white,
+html.theme-dark .rounded-lg.bg-white {
+  background: #0f172a !important;
+  border-color: rgba(255,255,255,.16) !important;
+  color: #e7edf6 !important;
+}
+body.theme-dark .rounded-xl.bg-white .text-slate-500,
+html.theme-dark .rounded-xl.bg-white .text-slate-500,
+body.theme-dark .rounded-xl.bg-white .text-slate-600,
+html.theme-dark .rounded-xl.bg-white .text-slate-600,
+body.theme-dark .rounded-lg.bg-white .text-slate-500,
+html.theme-dark .rounded-lg.bg-white .text-slate-500,
+body.theme-dark .rounded-lg.bg-white .text-slate-600,
+html.theme-dark .rounded-lg.bg-white .text-slate-600 {
+  color:#c9d5e1 !important;
+}
+body.theme-dark .rounded-xl.bg-white svg,
+html.theme-dark .rounded-xl.bg-white svg,
+body.theme-dark .rounded-lg.bg-white svg,
+html.theme-dark .rounded-lg.bg-white svg {
+  opacity: .9;
+  color:#dbe7f5;
+}
+
+/* 2) Botões SECUNDÁRIOS (borda/outline) — ex.: Ver parceiros, iOS/Android, Simular */
+@media (prefers-color-scheme: dark) {
+  .btn-secondary,
+  /* heurística: muitos dos seus secundários são "rounded-full border ..." */
+  .rounded-full.border {
+    background: transparent;
+    color:#e7edf6 !important;
+    border-color: rgba(255,255,255,.24) !important;
+  }
+  .btn-secondary:hover,
+  .rounded-full.border:hover {
+    background: rgba(255,255,255,.08) !important;
+    border-color: rgba(255,255,255,.32) !important;
+  }
+}
+
+/* idem quando o usuário força dark */
+body.theme-dark .btn-secondary,
+html.theme-dark .btn-secondary,
+body.theme-dark .rounded-full.border,
+html.theme-dark .rounded-full.border {
+  background: transparent;
+  color:#e7edf6 !important;
+  border-color: rgba(255,255,255,.24) !important;
+}
+body.theme-dark .btn-secondary:hover,
+html.theme-dark .btn-secondary:hover,
+body.theme-dark .rounded-full.border:hover,
+html.theme-dark .rounded-full.border:hover {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.32) !important;
+}
+
+/* 3) Microtextos cinza em cards/listas (inclui dependentes, dep. extra etc.) */
+@media (prefers-color-scheme: dark) {
+  .text-slate-500 { color:#b9c7d8 !important; }
+  .text-slate-600 { color:#c9d5e1 !important; }
+  .text-slate-700 { color:#d7e2ee !important; }
+}
+/* força quando em override dark */
+body.theme-dark .text-slate-500, html.theme-dark .text-slate-500 { color:#b9c7d8 !important; }
+body.theme-dark .text-slate-600, html.theme-dark .text-slate-600 { color:#c9d5e1 !important; }
+body.theme-dark .text-slate-700, html.theme-dark .text-slate-700 { color:#d7e2ee !important; }
+
+/* Pequeno ajuste nos "chips" tipo "Mais vendido" (se for claro demais) */
+@media (prefers-color-scheme: dark) {
+  .inline-flex.rounded-full.bg-slate-100 {
+    background:#1d283a !important;
+    color:#e7edf6 !important;
+    border:1px solid #2b3b55 !important;
+  }
+}
+body.theme-dark .inline-flex.rounded-full.bg-slate-100,
+html.theme-dark .inline-flex.rounded-full.bg-slate-100{
+  background:#1d283a !important;
+  color:#e7edf6 !important;
+  border:1px solid #2b3b55 !important;
+}
+
+
+/* ===============================
+   DARK — NAVBAR, FAQ, PLANOS
+   =============================== */
+
+/* ---------- NAVBAR ---------- */
+@media (prefers-color-scheme: dark) {
+  header.bg-white {                       /* sua Navbar tem bg-white */
+    background:#0f172a !important;
+    border-color: rgba(255,255,255,.12) !important;
+  }
+  header .text-slate-600,
+  header a { color:#e7edf6 !important; }
+  header a:hover {
+    color:#bfe3ff !important;
+    background:rgba(255,255,255,.06) !important;
+  }
+  /* links "ativos" já ficam bons, mas se quiser um hover mais visível: */
+  header .hover\:bg-slate-50:hover { background:rgba(255,255,255,.06) !important; }
+}
+/* quando o usuário força o dark pelo toggle */
+body.theme-dark header,
+html.theme-dark header {
+  background:#0f172a !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+body.theme-dark header .text-slate-600,
+html.theme-dark header .text-slate-600,
+body.theme-dark header a,
+html.theme-dark header a { color:#e7edf6 !important; }
+body.theme-dark header a:hover,
+html.theme-dark header a:hover {
+  color:#bfe3ff !important;
+  background:rgba(255,255,255,.06) !important;
+}
+
+/* ---------- SUPORTE GENÉRICO A FUNDOS CLAROS (FAQ, pílulas etc.) ---------- */
+@media (prefers-color-scheme: dark) {
+  .bg-white,
+  .bg-gray-50,
+  .bg-slate-50,
+  .bg-neutral-50 {
+    background:#0f172a !important;
+    color:#e7edf6 !important;
+    border-color: rgba(255,255,255,.16) !important;
+  }
+  .border-gray-200, .border-slate-200, .border-neutral-200 {
+    border-color: rgba(255,255,255,.16) !important;
+  }
+  /* textos secundários dentro desses blocos */
+  .bg-white .text-slate-500, .bg-gray-50 .text-slate-500, .bg-slate-50 .text-slate-500,
+  .bg-white .text-slate-600, .bg-gray-50 .text-slate-600, .bg-slate-50 .text-slate-600 {
+    color:#c9d5e1 !important;
+  }
+  /* ícones/carets dos accordions */
+  .bg-white svg, .bg-gray-50 svg, .bg-slate-50 svg { color:#dbe7f5; opacity:.9; }
+}
+/* idem quando forçado por classe */
+body.theme-dark .bg-white, html.theme-dark .bg-white,
+body.theme-dark .bg-gray-50, html.theme-dark .bg-gray-50,
+body.theme-dark .bg-slate-50, html.theme-dark .bg-slate-50,
+body.theme-dark .bg-neutral-50, html.theme-dark .bg-neutral-50 {
+  background:#0f172a !important;
+  color:#e7edf6 !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+body.theme-dark .border-gray-200, html.theme-dark .border-gray-200,
+body.theme-dark .border-slate-200, html.theme-dark .border-slate-200,
+body.theme-dark .border-neutral-200, html.theme-dark .border-neutral-200 {
+  border-color: rgba(255,255,255,.16) !important;
+}
+body.theme-dark .bg-white .text-slate-500, html.theme-dark .bg-white .text-slate-500,
+body.theme-dark .bg-white .text-slate-600, html.theme-dark .bg-white .text-slate-600,
+body.theme-dark .bg-slate-50 .text-slate-500, html.theme-dark .bg-slate-50 .text-slate-500,
+body.theme-dark .bg-slate-50 .text-slate-600, html.theme-dark .bg-slate-50 .text-slate-600 {
+  color:#c9d5e1 !important;
+}
+body.theme-dark .bg-white svg, html.theme-dark .bg-white svg,
+body.theme-dark .bg-slate-50 svg, html.theme-dark .bg-slate-50 svg { color:#dbe7f5; opacity:.9; }
+
+/* ---------- CARDS (Planos e afins) ---------- */
+@media (prefers-color-scheme: dark) {
+  /* qualquer card claro vira "painel dark" */
+  .card.bg-white,
+  .shadow-sm.bg-white,
+  .shadow.bg-white,
+  .rounded-2xl.bg-white,
+  .rounded-xl.bg-white {
+    background:#111827 !important;
+    color:#e7edf6 !important;
+    border-color: rgba(255,255,255,.14) !important;
+  }
+  /* microtextos dentro dos cards ("/mês", "Inclui X", etc.) */
+  .card .text-slate-500,
+  .card .text-slate-600,
+  .shadow-sm .text-slate-500,
+  .shadow-sm .text-slate-600 {
+    color:#c9d5e1 !important;
+  }
+  /* badge "Mais vendido" e semelhantes muito claras */
+  .inline-flex.rounded-full.bg-slate-100 { 
+    background:#1d283a !important; 
+    color:#e7edf6 !important; 
+    border:1px solid #2b3b55 !important;
+  }
+}
+body.theme-dark .card.bg-white,
+html.theme-dark .card.bg-white,
+body.theme-dark .shadow-sm.bg-white,
+html.theme-dark .shadow-sm.bg-white,
+body.theme-dark .rounded-2xl.bg-white,
+html.theme-dark .rounded-2xl.bg-white {
+  background:#111827 !important;
+  color:#e7edf6 !important;
+  border-color: rgba(255,255,255,.14) !important;
+}
+body.theme-dark .card .text-slate-500, html.theme-dark .card .text-slate-500,
+body.theme-dark .card .text-slate-600, html.theme-dark .card .text-slate-600 {
+  color:#c9d5e1 !important;
+}
+
+/* ---------- Botões SECUNDÁRIOS de borda (ex.: Ver parceiros, Simular, iOS/Android) ---------- */
+@media (prefers-color-scheme: dark) {
+  .btn-secondary,
+  .rounded-full.border {                      /* heurística: seus outline buttons */
+    background: transparent;
+    color:#e7edf6 !important;
+    border-color: rgba(255,255,255,.24) !important;
+  }
+  .btn-secondary:hover,
+  .rounded-full.border:hover {
+    background: rgba(255,255,255,.08) !important;
+    border-color: rgba(255,255,255,.32) !important;
+  }
+}
+body.theme-dark .btn-secondary, html.theme-dark .btn-secondary,
+body.theme-dark .rounded-full.border, html.theme-dark .rounded-full.border {
+  background: transparent;
+  color:#e7edf6 !important;
+  border-color: rgba(255,255,255,.24) !important;
+}
+body.theme-dark .btn-secondary:hover, html.theme-dark .btn-secondary:hover,
+body.theme-dark .rounded-full.border:hover, html.theme-dark .rounded-full.border:hover {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.32) !important;
+}
+
+/* =========================================================
+   DARK: forçar "painel dark" em itens com fundos claros
+   usados em FAQ e no card "App do Associado"
+   ========================================================= */
+
+/* Preferência do SO */
+@media (prefers-color-scheme: dark) {
+
+  /* 1) Qualquer elemento com bg claro + borda arredondada (cards/accordions)  */
+  .rounded-lg[class*="bg-"],
+  .rounded-xl[class*="bg-"],
+  .rounded-2xl[class*="bg-"],
+  .card[class*="bg-"] {
+    /* Pega bg-white, bg-white/90, bg-slate-50, bg-slate-100, bg-gray-100, etc. */
+    background: #0f172a !important;
+    color: #e7edf6 !important;
+    border-color: rgba(255,255,255,.16) !important;
+  }
+
+  /* 2) Cobertura explícita das variantes mais comuns */
+  .bg-white,
+  .bg-gray-50, .bg-gray-100, .bg-gray-200,
+  .bg-slate-50, .bg-slate-100, .bg-slate-200,
+  .bg-neutral-50, .bg-neutral-100, .bg-neutral-200,
+  [class*="bg-white/"], [class*="bg-gray-1"], [class*="bg-slate-1"], [class*="bg-neutral-1"] {
+    background: #0f172a !important;
+    color: #e7edf6 !important;
+    border-color: rgba(255,255,255,.16) !important;
+  }
+
+  /* 3) Textos secundários dentro desses blocos (FAQ e cards) */
+  .rounded-lg[class*="bg-"] .text-slate-500,
+  .rounded-lg[class*="bg-"] .text-slate-600,
+  .rounded-xl[class*="bg-"] .text-slate-500,
+  .rounded-xl[class*="bg-"] .text-slate-600,
+  .rounded-2xl[class*="bg-"] .text-slate-500,
+  .rounded-2xl[class*="bg-"] .text-slate-600 {
+    color: #c9d5e1 !important;
+  }
+
+  /* 4) Ícones/carets dos accordions (FAQ) */
+  .rounded-lg[class*="bg-"] svg,
+  .rounded-xl[class*="bg-"] svg,
+  .rounded-2xl[class*="bg-"] svg {
+    color: #dbe7f5 !important;
+    opacity: .9 !important;
+  }
+
+  /* 5) "Chips" (ex.: badge "Mais vendido") muito claras */
+  .inline-flex.rounded-full.bg-slate-100,
+  .inline-flex.rounded-full.bg-gray-100,
+  .inline-flex.rounded-full[class*="bg-white"] {
+    background:#1d283a !important;
+    color:#e7edf6 !important;
+    border:1px solid #2b3b55 !important;
+  }
+}
+
+/* Modo escuro forçado via classe .theme-dark (toggle)  */
+body.theme-dark .rounded-lg[class*="bg-"],
+html.theme-dark .rounded-lg[class*="bg-"],
+body.theme-dark .rounded-xl[class*="bg-"],
+html.theme-dark .rounded-xl[class*="bg-"],
+body.theme-dark .rounded-2xl[class*="bg-"],
+html.theme-dark .rounded-2xl[class*="bg-"],
+body.theme-dark .card[class*="bg-"],
+html.theme-dark .card[class*="bg-"],
+body.theme-dark .bg-white, html.theme-dark .bg-white,
+body.theme-dark .bg-gray-50, html.theme-dark .bg-gray-50,
+body.theme-dark .bg-gray-100, html.theme-dark .bg-gray-100,
+body.theme-dark .bg-gray-200, html.theme-dark .bg-gray-200,
+body.theme-dark .bg-slate-50, html.theme-dark .bg-slate-50,
+body.theme-dark .bg-slate-100, html.theme-dark .bg-slate-100,
+body.theme-dark .bg-slate-200, html.theme-dark .bg-slate-200,
+body.theme-dark .bg-neutral-50, html.theme-dark .bg-neutral-50,
+body.theme-dark .bg-neutral-100, html.theme-dark .bg-neutral-100,
+body.theme-dark .bg-neutral-200, html.theme-dark .bg-neutral-200,
+body.theme-dark [class*="bg-white/"], html.theme-dark [class*="bg-white/"],
+body.theme-dark [class*="bg-gray-1"], html.theme-dark [class*="bg-gray-1"],
+body.theme-dark [class*="bg-slate-1"], html.theme-dark [class*="bg-slate-1"],
+body.theme-dark [class*="bg-neutral-1"], html.theme-dark [class*="bg-neutral-1"] {
+  background:#0f172a !important;
+  color:#e7edf6 !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+body.theme-dark .rounded-lg[class*="bg-"] .text-slate-500,
+html.theme-dark .rounded-lg[class*="bg-"] .text-slate-500,
+body.theme-dark .rounded-xl[class*="bg-"] .text-slate-500,
+html.theme-dark .rounded-xl[class*="bg-"] .text-slate-500,
+body.theme-dark .rounded-2xl[class*="bg-"] .text-slate-500,
+html.theme-dark .rounded-2xl[class*="bg-"] .text-slate-500 {
+  color:#c9d5e1 !important;
+}
+body.theme-dark .rounded-lg[class*="bg-"] svg,
+html.theme-dark .rounded-lg[class*="bg-"] svg,
+body.theme-dark .rounded-xl[class*="bg-"] svg,
+html.theme-dark .rounded-xl[class*="bg-"] svg,
+body.theme-dark .rounded-2xl[class*="bg-"] svg,
+html.theme-dark .rounded-2xl[class*="bg-"] svg {
+  color:#dbe7f5 !important;
+  opacity:.9 !important;
+}
+
+/* =========================================================
+   DARK FIX — aplica SOMENTE no tema escuro
+   Suporta html[data-theme="dark"] e .theme-dark no <html> ou <body>
+   (mantém tema claro intacto)
+   ========================================================= */
+
+/* ------------------------ FAQ ------------------------ */
+html[data-theme="dark"] .faq-dark .rounded,
+html[data-theme="dark"] .faq-dark .rounded-md,
+html[data-theme="dark"] .faq-dark .rounded-lg,
+html[data-theme="dark"] .faq-dark .rounded-xl,
+html[data-theme="dark"] .faq-dark .rounded-2xl,
+html[data-theme="dark"] .faq-dark details,
+html[data-theme="dark"] .faq-dark summary,
+html[data-theme="dark"] .faq-dark .accordion,
+html[data-theme="dark"] .faq-dark .accordion-item,
+html[data-theme="dark"] .faq-dark .accordion-header,
+html[data-theme="dark"] .faq-dark .accordion-button,
+html[data-theme="dark"] .faq-dark .accordion-panel,
+html[data-theme="dark"] .faq-dark .bg-white,
+html[data-theme="dark"] .faq-dark [class*="bg-white"],
+html[data-theme="dark"] .faq-dark .bg-gray-50, 
+html[data-theme="dark"] .faq-dark .bg-gray-100, 
+html[data-theme="dark"] .faq-dark .bg-gray-200,
+html[data-theme="dark"] .faq-dark .bg-slate-50, 
+html[data-theme="dark"] .faq-dark .bg-slate-100, 
+html[data-theme="dark"] .faq-dark .bg-slate-200,
+.theme-dark .faq-dark .rounded,
+.theme-dark .faq-dark .rounded-md,
+.theme-dark .faq-dark .rounded-lg,
+.theme-dark .faq-dark .rounded-xl,
+.theme-dark .faq-dark .rounded-2xl,
+.theme-dark .faq-dark details,
+.theme-dark .faq-dark summary,
+.theme-dark .faq-dark .accordion,
+.theme-dark .faq-dark .accordion-item,
+.theme-dark .faq-dark .accordion-header,
+.theme-dark .faq-dark .accordion-button,
+.theme-dark .faq-dark .accordion-panel,
+.theme-dark .faq-dark .bg-white,
+.theme-dark .faq-dark [class*="bg-white"],
+.theme-dark .faq-dark .bg-gray-50, 
+.theme-dark .faq-dark .bg-gray-100, 
+.theme-dark .faq-dark .bg-gray-200,
+.theme-dark .faq-dark .bg-slate-50, 
+.theme-dark .faq-dark .bg-slate-100, 
+.theme-dark .faq-dark .bg-slate-200 {
+  background: #0f172a !important;
+  color: #e7edf6 !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+html[data-theme="dark"] .faq-dark .text-slate-400,
+html[data-theme="dark"] .faq-dark .text-slate-500,
+html[data-theme="dark"] .faq-dark .text-slate-600,
+html[data-theme="dark"] .faq-dark .text-gray-400,
+html[data-theme="dark"] .faq-dark .text-gray-500,
+html[data-theme="dark"] .faq-dark .text-gray-600,
+.theme-dark .faq-dark .text-slate-400,
+.theme-dark .faq-dark .text-slate-500,
+.theme-dark .faq-dark .text-slate-600,
+.theme-dark .faq-dark .text-gray-400,
+.theme-dark .faq-dark .text-gray-500,
+.theme-dark .faq-dark .text-gray-600 {
+  color: #c9d5e1 !important;
+}
+
+html[data-theme="dark"] .faq-dark svg,
+.theme-dark .faq-dark svg {
+  color: #dbe7f5 !important;
+  opacity: .9 !important;
+}
+
+html[data-theme="dark"] .faq-dark .accordion-button:hover,
+html[data-theme="dark"] .faq-dark summary:hover,
+.theme-dark .faq-dark .accordion-button:hover,
+.theme-dark .faq-dark summary:hover {
+  background: #121c2d !important;
+}
+
+html[data-theme="dark"] .faq-dark .accordion-button:focus,
+html[data-theme="dark"] .faq-dark summary:focus,
+.theme-dark .faq-dark .accordion-button:focus,
+.theme-dark .faq-dark summary:focus {
+  outline: 2px solid #2b3b55 !important;
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] .faq-dark a,
+.theme-dark .faq-dark a {
+  color: #9cc5ff !important;
+  text-decoration: underline;
+}
+
+/* Pills/badges claros dentro do FAQ */
+html[data-theme="dark"] .faq-dark .inline-flex.rounded-full[class*="bg-"],
+.theme-dark .faq-dark .inline-flex.rounded-full[class*="bg-"] {
+  background:#1d283a !important;
+  color:#e7edf6 !important;
+  border:1px solid #2b3b55 !important;
+}
+
+/* ------------------ Card "App do Associado" ------------------ */
+html[data-theme="dark"] .app-promo-dark,
+html[data-theme="dark"] .app-promo-dark .rounded,
+html[data-theme="dark"] .app-promo-dark .rounded-lg,
+html[data-theme="dark"] .app-promo-dark .rounded-xl,
+html[data-theme="dark"] .app-promo-dark .rounded-2xl,
+html[data-theme="dark"] .app-promo-dark .card,
+html[data-theme="dark"] .app-promo-dark .bg-white,
+html[data-theme="dark"] .app-promo-dark [class*="bg-white"],
+html[data-theme="dark"] .app-promo-dark .bg-gray-50, 
+html[data-theme="dark"] .app-promo-dark .bg-gray-100, 
+html[data-theme="dark"] .app-promo-dark .bg-gray-200,
+html[data-theme="dark"] .app-promo-dark .bg-slate-50, 
+html[data-theme="dark"] .app-promo-dark .bg-slate-100, 
+html[data-theme="dark"] .app-promo-dark .bg-slate-200,
+.theme-dark .app-promo-dark,
+.theme-dark .app-promo-dark .rounded,
+.theme-dark .app-promo-dark .rounded-lg,
+.theme-dark .app-promo-dark .rounded-xl,
+.theme-dark .app-promo-dark .rounded-2xl,
+.theme-dark .app-promo-dark .card,
+.theme-dark .app-promo-dark .bg-white,
+.theme-dark .app-promo-dark [class*="bg-white"],
+.theme-dark .app-promo-dark .bg-gray-50, 
+.theme-dark .app-promo-dark .bg-gray-100, 
+.theme-dark .app-promo-dark .bg-gray-200,
+.theme-dark .app-promo-dark .bg-slate-50, 
+.theme-dark .app-promo-dark .bg-slate-100, 
+.theme-dark .app-promo-dark .bg-slate-200 {
+  background: #0f172a !important;
+  color: #e7edf6 !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+html[data-theme="dark"] .app-promo-dark .text-slate-500,
+html[data-theme="dark"] .app-promo-dark .text-slate-600,
+html[data-theme="dark"] .app-promo-dark .text-gray-500,
+html[data-theme="dark"] .app-promo-dark .text-gray-600,
+.theme-dark .app-promo-dark .text-slate-500,
+.theme-dark .app-promo-dark .text-slate-600,
+.theme-dark .app-promo-dark .text-gray-500,
+.theme-dark .app-promo-dark .text-gray-600 {
+  color: #c9d5e1 !important;
+}
+
+html[data-theme="dark"] .app-promo-dark svg,
+.theme-dark .app-promo-dark svg {
+  color:#dbe7f5 !important; opacity:.9;
+}
+
+/* ===== Fix: visibilidade de nome e preço do card de planos no DARK ===== */
+/* Funciona com prefers-color-scheme e também com .theme-dark no body/html */
+@media (prefers-color-scheme: dark){
+  .plano-card .plano-title { color:#e7edf6 !important; }
+  .plano-card .plano-price { color:#ffffff !important; }
+}
+body.theme-dark .plano-card .plano-title,
+html.theme-dark .plano-card .plano-title { color:#e7edf6 !important; }
+body.theme-dark .plano-card .plano-price,
+html.theme-dark .plano-card .plano-price { color:#ffffff !important; }
+
+/* ---- DARK FIX: títulos dentro de cards (clube / planos) ---- */
+@media (prefers-color-scheme: dark){
+  .card .card-title { color:#e7edf6 !important; } /* slate-100 */
+}
+body.theme-dark .card .card-title,
+html.theme-dark .card .card-title{
+  color:#e7edf6 !important;
+}
