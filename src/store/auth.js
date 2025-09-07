@@ -1,94 +1,97 @@
 // src/store/auth.js
-import api, { setAuthTokenProvider } from '@/lib/api'
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
+import api, { setAuthTokenProvider } from '@/lib/api'
 
+/**
+ * Gera/recupera um identificador do dispositivo para auditoria e segurança.
+ * É enviado no header X-Device-ID durante o login.
+ */
 function getDeviceId() {
   const k = 'x_device_id'
-  let v = localStorage.getItem(k)
-  if (!v) { v = crypto.randomUUID(); localStorage.setItem(k, v) }
+  let v = null
+  try {
+    v = localStorage.getItem(k)
+    if (!v) {
+      v = crypto.randomUUID()
+      localStorage.setItem(k, v)
+    }
+  } catch {
+    // se o localStorage não estiver disponível, ignora
+  }
   return v
 }
 
-const useAuth = create(persist((set, get) => ({
-  user: null,
-  clientToken: null,
-  clientExp: 0,
+/**
+ * Tipos de dados esperados do backend (documentação informal):
+ * - `user`: payload retornado pelo login (nome, e-mail, claims etc.)
+ * - `token` (opcional): bearer para endpoints que exigem autenticação de usuário
+ *   Pode vir em `data.token`, `data.access_token` ou `data.jwt` — normalizamos abaixo.
+ */
 
-  getAuthToken: () => {
-    const u = get().user
-    if (u?.accessToken) return u.accessToken
-    return get().clientToken
-  },
+const useAuth = create(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
 
-  // helper pra usar no app inteiro
-  isLogged: () => {
-    const u = get().user
-    return Boolean(u && (u.id || u.userId || u.cpf || u.email || u.accessToken))
-  },
+      /**
+       * Realiza login no BFF do app.
+       * Importante: o BFF já deve estar autenticado com o "client token" via interceptor.
+       */
+      login: async (identificador, senha) => {
+        const { data } = await api.post(
+          '/api/v1/app/auth/login',
+          { identificador, senha },
+          { headers: { 'X-Device-ID': getDeviceId() } }
+        )
 
-  ensureClientToken: async () => {
-    const now = Math.floor(Date.now()/1000)
-    const { clientToken, clientExp } = get()
-    if (clientToken && clientExp - now > 30) return clientToken
+        // Normaliza token se existir no payload:
+        const token = data?.token ?? data?.access_token ?? data?.jwt ?? null
 
-    const res = await api.post('/auth/client-token')
-    const data = res.data
-    set({
-      clientToken: data.access_token || data.accessToken,
-      clientExp: now + (data.expires_in || 300)
-    })
-    return get().clientToken
-  },
+        set({ user: data, token })
+        return data
+      },
 
-  login: async (identificador, senha) => {
-    await get().ensureClientToken()
-    const { data } = await api.post(
-      '/api/v1/app/auth/login',
-      { identificador, senha },
-      { headers: { 'X-Device-ID': getDeviceId() } }
-    )
+      /**
+       * Limpa sessão local.
+       */
+      logout: () => {
+        set({ user: null, token: null })
+      },
 
-    // normaliza para sempre ter accessToken no mesmo campo
-    const accessToken = data?.access_token || data?.accessToken || data?.token || null
-    const user = {
-      accessToken,
-      id: data?.id || data?.userId || null,
-      cpf: data?.cpf || null,
-      nome: data?.nome || data?.name || data?.usuario || null,
-      email: data?.email || null,
+      /**
+       * Helpers
+       */
+      isAuthenticated: () => {
+        return !!get().user
+      },
+      getToken: () => {
+        return get().token
+      },
+      setUser: (user) => set({ user }),
+      setToken: (token) => set({ token }),
+    }),
+    {
+      name: 'auth-store', // chave no localStorage
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
+      // opcional: versionar e migrar, se necessário
+      // version: 1,
+      // migrate: async (persistedState, version) => persistedState,
     }
-    set({ user })
-    return user
-  },
+  )
+)
 
-  logout: () => {
-    // mantém o clientToken pra telas públicas funcionarem
-    set({ user: null })
-  },
-}), {
-  name: 'auth',
-  storage: createJSONStorage(() => localStorage),
+/**
+ * Fornece o Bearer do usuário ao axios quando houver token de usuário.
+ * Mantém compatibilidade: para endpoints que usam apenas "client token", o interceptor do `api` já cuida.
+ */
+setAuthTokenProvider(() => {
+  const { token } = useAuth.getState()
+  return token || null
+})
 
-  // ✔️ migração: se vier user sem identificadores, zera
-  version: 2,
-  migrate: (state, version) => {
-    if (!state) return state
-    const u = state.user
-    if (u && !(u.id || u.userId || u.cpf || u.email || u.accessToken)) {
-      state.user = null
-    }
-    return state
-  },
-
-  // ✔️ sanitiza imediatamente após rehidratar
-  onRehydrateStorage: () => (state) => {
-    const u = state?.user
-    if (u && !(u.id || u.userId || u.cpf || u.email || u.accessToken)) {
-      state.user = null
-    }
-  },
-}))
-
-setAuthTokenProvider(() => useAuth.getState().getAuthToken())
 export default useAuth

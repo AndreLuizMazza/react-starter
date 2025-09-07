@@ -4,26 +4,30 @@ import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import useAuth from '@/store/auth'
 import useTenant from '@/store/tenant'
+import ThemeToggle from './ThemeToggle.jsx'
 
-export default function Navbar(){
-  const user = useAuth(s => s.user)
-  const logout = useAuth(s => s.logout)
+export default function Navbar() {
+  const { isAuthenticated, token, user } = useAuth(s => ({
+    isAuthenticated: s.isAuthenticated,
+    token: s.token,
+    user: s.user,
+  }))
   const empresa = useTenant(s => s.empresa)
 
   const nome = empresa?.nomeFantasia || 'Progem Starter'
   const logo = empresa?.urlLogo
-  const isLogged = !!user?.accessToken
+  const isLogged = isAuthenticated() || !!token || !!user
+  const areaDest = isLogged ? '/area' : '/login'
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
 
-  // Classe para links
   const linkClass = ({ isActive }) =>
-    "relative pl-4 pr-3 py-2 flex items-center rounded-md transition-colors duration-150 " +
+    'relative pl-4 pr-3 py-2 flex items-center rounded-md transition-colors duration-150 ' +
     (isActive
-      ? "text-primary font-semibold bg-primary/5"
-      : "text-slate-600 hover:text-primary hover:bg-slate-50")
+      ? 'text-primary font-semibold bg-primary/5'
+      : 'text-slate-600 hover:text-primary hover:bg-slate-50')
 
   const ActiveBar = ({ isActive }) =>
     isActive ? (
@@ -53,59 +57,48 @@ export default function Navbar(){
         {/* Navegação desktop */}
         <nav className="hidden md:flex items-center gap-4 text-sm">
           <NavLink to="/" className={linkClass} end>
-            {({ isActive }) => <>
-              <ActiveBar isActive={isActive} /> Home
-            </>}
+            {({ isActive }) => (
+              <>
+                <ActiveBar isActive={isActive} /> Home
+              </>
+            )}
           </NavLink>
 
           <NavLink to="/planos" className={linkClass}>
-            {({ isActive }) => <>
-              <ActiveBar isActive={isActive} /> Planos
-            </>}
+            {({ isActive }) => (
+              <>
+                <ActiveBar isActive={isActive} /> Planos
+              </>
+            )}
           </NavLink>
 
           <NavLink to="/beneficios" className={linkClass}>
-            {({ isActive }) => <>
-              <ActiveBar isActive={isActive} /> Clube de Benefícios
-            </>}
+            {({ isActive }) => (
+              <>
+                <ActiveBar isActive={isActive} /> Clube de Benefícios
+              </>
+            )}
           </NavLink>
 
           <NavLink to="/memorial" className={linkClass}>
-            {({ isActive }) => <>
-              <ActiveBar isActive={isActive} /> Memorial
-            </>}
+            {({ isActive }) => (
+              <>
+                <ActiveBar isActive={isActive} /> Memorial
+              </>
+            )}
           </NavLink>
 
-          {isLogged ? (
-            <NavLink to="/area" className={linkClass}>
-              {({ isActive }) => <>
+          {/* Área do associado (direciona conforme sessão) */}
+          <NavLink to={areaDest} className={linkClass}>
+            {({ isActive }) => (
+              <>
                 <ActiveBar isActive={isActive} /> Área do associado
-              </>}
-            </NavLink>
-          ) : (
-            <NavLink to="/login" className={linkClass}>
-              {({ isActive }) => <>
-                <ActiveBar isActive={isActive} /> Área do associado
-              </>}
-            </NavLink>
-          )}
+              </>
+            )}
+          </NavLink>
 
-          {isLogged ? (
-            <button
-              type="button"
-              onClick={logout}
-              className="ml-2 text-slate-600 hover:text-primary px-3 py-1 rounded-md"
-              title="Sair"
-            >
-              Sair
-            </button>
-          ) : (
-            <NavLink to="/login" className={linkClass}>
-              {({ isActive }) => <>
-                <ActiveBar isActive={isActive} /> Login
-              </>}
-            </NavLink>
-          )}
+          {/* Toggle de tema (desktop) */}
+          <ThemeToggle className="ml-2 hidden md:inline-flex" />
         </nav>
 
         {/* Botão hambúrguer (mobile) */}
@@ -125,58 +118,49 @@ export default function Navbar(){
         <div id="mobile-menu" className="md:hidden border-t bg-white">
           <div className="container-max py-2 flex flex-col text-sm space-y-1">
             <NavLink to="/" className={linkClass} end>
-              {({ isActive }) => <>
-                <ActiveBar isActive={isActive} /> Home
-              </>}
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> Home
+                </>
+              )}
             </NavLink>
 
             <NavLink to="/planos" className={linkClass}>
-              {({ isActive }) => <>
-                <ActiveBar isActive={isActive} /> Planos
-              </>}
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> Planos
+                </>
+              )}
             </NavLink>
 
             <NavLink to="/beneficios" className={linkClass}>
-              {({ isActive }) => <>
-                <ActiveBar isActive={isActive} /> Clube de Benefícios
-              </>}
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> Clube de Benefícios
+                </>
+              )}
             </NavLink>
 
             <NavLink to="/memorial" className={linkClass}>
-              {({ isActive }) => <>
-                <ActiveBar isActive={isActive} /> Memorial
-              </>}
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> Memorial
+                </>
+              )}
             </NavLink>
 
-            {isLogged ? (
-              <NavLink to="/area" className={linkClass}>
-                {({ isActive }) => <>
+            <NavLink to={areaDest} className={linkClass}>
+              {({ isActive }) => (
+                <>
                   <ActiveBar isActive={isActive} /> Área do associado
-                </>}
-              </NavLink>
-            ) : (
-              <NavLink to="/login" className={linkClass}>
-                {({ isActive }) => <>
-                  <ActiveBar isActive={isActive} /> Área do associado
-                </>}
-              </NavLink>
-            )}
+                </>
+              )}
+            </NavLink>
 
-            {isLogged ? (
-              <button
-                type="button"
-                onClick={logout}
-                className="text-left pl-4 pr-2 py-3 text-slate-600 hover:text-primary rounded-md"
-              >
-                Sair
-              </button>
-            ) : (
-              <NavLink to="/login" className={linkClass}>
-                {({ isActive }) => <>
-                  <ActiveBar isActive={isActive} /> Login
-                </>}
-              </NavLink>
-            )}
+            {/* Toggle de tema no mobile */}
+            <div className="border-t mt-2 pt-2">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       )}

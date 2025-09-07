@@ -1,69 +1,108 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '@/lib/api.js'
-import useAuth from '@/store/auth.js'
-import { pick, money, encontrarFaixaPorIdade, isIsento, getMensal } from '@/lib/planUtils.js'
+import {
+  pick,
+  money,
+  encontrarFaixaPorIdade,
+  isIsento,
+  getMensal,
+} from '@/lib/planUtils.js'
 import { Sparkles, CheckCircle2, ShieldCheck, Clock3 } from 'lucide-react'
 
 export default function PlanoDetalhe() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const ensureClientToken = useAuth(s => s.ensureClientToken)
 
   const [plano, setPlano] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // simulador
   const [idadeTitular, setIdadeTitular] = useState(30)
   const [dependentes, setDependentes] = useState([])
 
-  const simRef = useRef(null) // âncora pra CTA “Simular agora”
-  const addLockRef = useRef(false) // previne duplo add
+  const simRef = useRef(null)
+  const addLockRef = useRef(false)
+
+  async function fetchPlano(planId) {
+    setLoading(true)
+    setError('')
+    try {
+      const { data } = await api.get(`/api/v1/planos/${planId}`, {
+        transformRequest: [
+          (d, headers) => {
+            try { delete headers.Authorization } catch {}
+            return d
+          },
+        ],
+      })
+      setPlano(data)
+    } catch (e) {
+      try {
+        const { data } = await api.get(`/api/v1/planos/${planId}`, {
+          headers: { Authorization: '' },
+        })
+        setPlano(data)
+      } catch (err) {
+        console.error(err)
+        setError(`Falha ao carregar o plano (id: ${planId}).`)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    (async () => {
-      try {
-        await ensureClientToken()
-        setError('')
-        const { data } = await api.get(`/api/v1/planos/${id}`)
-        setPlano(data)
-      } catch (e) { console.error(e); setError('Falha ao carregar o plano.') }
-      finally { setLoading(false) }
-    })()
+    if (id) fetchPlano(id)
   }, [id])
 
-  // valores base (mensal)
+  // --------- Cálculos base ----------
   const baseMensal = getMensal(plano)
-  const valorAdesao = Number(pick(plano || {}, 'valorAdesao', 'valor_adesao') || 0)
-  const numDepsIncl = Number(pick(plano || {}, 'numeroDependentes', 'numero_dependentes') || 0)
+  const valorAdesao = Number(
+    pick(plano || {}, 'valorAdesao', 'valor_adesao') || 0
+  )
+  const numDepsIncl = Number(
+    pick(plano || {}, 'numeroDependentes', 'numero_dependentes') || 0
+  )
 
-  // dependente: mensal = anual/12
-  const valorIncrementalAnual = Number(pick(plano || {}, 'valorIncremental', 'valor_incremental') || 0)
+  const valorIncrementalAnual = Number(
+    pick(plano || {}, 'valorIncremental', 'valor_incremental') || 0
+  )
   const valorIncrementalMensal = valorIncrementalAnual / 12
 
   const faixasDep = pick(plano || {}, 'faixasEtarias', 'faixas_etarias') || []
-  const faixasTit = pick(plano || {}, 'faixasEtariasTitular', 'faixas_etarias_titular') || []
+  const faixasTit =
+    pick(plano || {}, 'faixasEtariasTitular', 'faixas_etarias_titular') || []
   const isencoes = pick(plano || {}, 'isencoes') || []
-  const unidadeCarencia = pick(plano || {}, 'unidadeCarencia', 'unidade_carencia') || 'DIAS'
-  const periodoCarencia = pick(plano || {}, 'periodoCarencia', 'periodo_carencia') || 0
-  const parentescosAll = pick(plano || {}, 'parentescos') || ['CONJUGE','FILHO','PAI','MAE']
+  const unidadeCarencia =
+    pick(plano || {}, 'unidadeCarencia', 'unidade_carencia') || 'DIAS'
+  const periodoCarencia =
+    pick(plano || {}, 'periodoCarencia', 'periodo_carencia') || 0
+  const parentescosAll = pick(plano || {}, 'parentescos') || [
+    'CONJUGE',
+    'FILHO',
+    'PAI',
+    'MAE',
+  ]
   const parentescos = Array.isArray(parentescosAll)
-    ? parentescosAll.filter(p => String(p).toUpperCase() !== 'TITULAR')
+    ? parentescosAll.filter((p) => String(p).toUpperCase() !== 'TITULAR')
     : ['FILHO']
 
-  // custos do titular
-  const faixaTit = useMemo(() => encontrarFaixaPorIdade(faixasTit, idadeTitular), [faixasTit, idadeTitular])
+  const faixaTit = useMemo(
+    () => encontrarFaixaPorIdade(faixasTit, idadeTitular),
+    [faixasTit, idadeTitular]
+  )
   const custoTitularFaixa = Number(faixaTit?.valor || 0)
   const custoTitular = baseMensal + custoTitularFaixa
 
-  // dependentes
   const extrasCount = Math.max(0, dependentes.length - Number(numDepsIncl))
   const custoIncrementalExtras = extrasCount * valorIncrementalMensal
 
   const custosDependentes = dependentes.map((d) => {
     const faixa = encontrarFaixaPorIdade(faixasDep, Number(d.idade || 0))
     const isento = isIsento(isencoes, Number(d.idade || 0), d.parentesco)
-    const valorFaixa = isento ? 0 : Number(faixa?.valor || 0) // faixas já são mensais
+    const valorFaixa = isento ? 0 : Number(faixa?.valor || 0)
     return { ...d, valorFaixa, isento, faixa }
   })
   const somaFaixasDep = custosDependentes.reduce((acc, d) => acc + d.valorFaixa, 0)
@@ -74,47 +113,75 @@ export default function PlanoDetalhe() {
   function addDependente() {
     if (addLockRef.current) return
     addLockRef.current = true
-    const novo = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-      parentesco: parentescos[0] || 'FILHO',
-      idade: 0
-    }
-    setDependentes(prev => [...prev, novo])
-    setTimeout(() => { addLockRef.current = false }, 250)
+    setDependentes((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        parentesco: parentescos[0] || 'FILHO',
+        idade: 0,
+      },
+    ])
+    setTimeout(() => (addLockRef.current = false), 250)
   }
   function updDependente(i, patch) {
-    setDependentes(prev => {
+    setDependentes((prev) => {
       const copy = prev.slice()
       copy[i] = { ...copy[i], ...patch }
       return copy
     })
   }
   function delDependente(i) {
-    setDependentes(prev => {
+    setDependentes((prev) => {
       const copy = prev.slice()
-      copy.splice(i,1)
+      copy.splice(i, 1)
       return copy
     })
   }
-  const scrollToSim = () => simRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const scrollToSim = () =>
+    simRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-  if (loading) return <section className="section"><div className="container-max">Carregando…</div></section>
-  if (error) return <section className="section"><div className="container-max text-red-600">{error}</div></section>
+  if (loading) {
+    return (
+      <section className="section">
+        <div className="container-max">
+          <div className="h-80 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="section">
+        <div className="container-max">
+          <p className="text-red-600 dark:text-red-400 mb-3">{error}</p>
+          <button
+            onClick={() => fetchPlano(id)}
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100"
+          >
+            Tentar de novo
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   if (!plano) return null
 
   const foto = pick(plano, 'foto')
-  const img = (foto && String(foto).trim().length > 0)
-    ? foto
-    : 'https://images.unsplash.com/photo-1520975954732-35dd2229963a?q=80&w=1600&auto=format&fit=crop'
+  const img =
+    foto && String(foto).trim().length > 0
+      ? foto
+      : 'https://images.unsplash.com/photo-1520975954732-35dd2229963a?q=80&w=1600&auto=format&fit=crop'
 
   return (
     <section className="section">
       <div className="container-max">
-        {/* topo: voltar */}
+        {/* voltar */}
         <div className="mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-600 dark:text-slate-100"
           >
             ← Voltar
           </button>
@@ -123,31 +190,65 @@ export default function PlanoDetalhe() {
         {/* HERO */}
         <div className="grid gap-8 md:grid-cols-[1.2fr,1fr]">
           {/* imagem sem cortes */}
-          <div className="rounded-2xl bg-slate-50">
+          <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/40">
             <div className="h-72 w-full p-4 flex items-center justify-center">
-              <img src={img} alt={plano.nome} className="max-h-full max-w-full object-contain" />
+              <img
+                src={img}
+                alt={plano.nome}
+                className="max-h-full max-w-full object-contain"
+              />
             </div>
           </div>
 
           <div className="flex flex-col justify-center">
-            <h1 className="text-3xl font-extrabold tracking-tight">{plano.nome}</h1>
-            <p className="mt-2 text-lg text-slate-700">
-              {money(baseMensal)}/mês <span className="text-sm text-slate-500">(base)</span>
+            <h1 className="text-3xl font-extrabold tracking-tight">
+              {plano.nome}
+            </h1>
+
+            <p className="mt-2 text-lg text-slate-700 dark:text-slate-200">
+              {money(baseMensal)}{' '}
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                /mês (base)
+              </span>
             </p>
 
             <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-              <div><span className="text-slate-500">Dependentes incluídos: </span><strong>{numDepsIncl}</strong></div>
-              <div><span className="text-slate-500">+ por dependente: </span><strong>{money(valorIncrementalMensal)}</strong></div>
-              <div><span className="text-slate-500">Carência: </span><strong>{periodoCarencia} {unidadeCarencia}</strong></div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400">
+                  Dependentes incluídos:{' '}
+                </span>
+                <strong>{numDepsIncl}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400">
+                  + por dependente:{' '}
+                </span>
+                <strong>{money(valorIncrementalMensal)}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400">
+                  Carência:{' '}
+                </span>
+                <strong>
+                  {periodoCarencia} {unidadeCarencia}
+                </strong>
+              </div>
             </div>
 
-            {/* CTA de topo: foco em conversão */}
-            <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+            {/* CTA topo */}
+            <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:bg-sky-900/20 dark:border-sky-800/40">
               <div className="flex items-start gap-3">
-                <div className="rounded-full bg-sky-600/90 p-2 text-white"><Sparkles size={16} /></div>
+                <div className="rounded-full bg-sky-600/90 p-2 text-white">
+                  <Sparkles size={16} />
+                </div>
                 <div className="flex-1">
-                  <p className="text-slate-800 font-semibold">Simule o plano em segundos</p>
-                  <p className="text-sm text-slate-600">Informe a idade do titular e adicione dependentes para ver o valor exato.</p>
+                  <p className="text-slate-800 font-semibold dark:text-slate-100">
+                    Simule o plano em segundos
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Informe a idade do titular e adicione dependentes para ver o
+                    valor exato.
+                  </p>
                 </div>
                 <button
                   onClick={scrollToSim}
@@ -157,11 +258,19 @@ export default function PlanoDetalhe() {
                 </button>
               </div>
 
-              {/* bullets confiança */}
-              <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600">
-                <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-slate-700" /> Sem fidelidade</span>
-                <span className="inline-flex items-center gap-1"><Clock3 size={14} className="text-slate-700" /> Ativação rápida</span>
-                <span className="inline-flex items-center gap-1"><CheckCircle2 size={14} className="text-slate-700" /> Pagamento seguro</span>
+              <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1">
+                  <ShieldCheck size={14} className="text-slate-700 dark:text-slate-200" />
+                  Sem fidelidade
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Clock3 size={14} className="text-slate-700 dark:text-slate-200" />
+                  Ativação rápida
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 size={14} className="text-slate-700 dark:text-slate-200" />
+                  Pagamento seguro
+                </span>
               </div>
             </div>
           </div>
@@ -177,10 +286,19 @@ export default function PlanoDetalhe() {
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <label className="label">Idade do titular</label>
-                  <input className="input" type="number" min="0" max="120" value={idadeTitular} onChange={e=>setIdadeTitular(Number(e.target.value))} />
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={idadeTitular}
+                    onChange={(e) => setIdadeTitular(Number(e.target.value))}
+                  />
                   {faixaTit && (
-                    <p className="mt-1 text-xs text-slate-500">
-                      Faixa do titular: {faixaTit.idadeMinima ?? faixaTit.idade_minima}–{faixaTit.idadeMaxima ?? faixaTit.idade_maxima} • Adicional: {money(faixaTit.valor)}
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Faixa do titular: {faixaTit.idadeMinima ?? faixaTit.idade_minima}
+                      –{faixaTit.idadeMaxima ?? faixaTit.idade_maxima} • Adicional:{' '}
+                      {money(faixaTit.valor)}
                     </p>
                   )}
                 </div>
@@ -190,33 +308,68 @@ export default function PlanoDetalhe() {
                 </div>
                 <div>
                   <label className="label">Carência</label>
-                  <input className="input" value={`${periodoCarencia} ${unidadeCarencia}`} readOnly />
+                  <input
+                    className="input"
+                    value={`${periodoCarencia} ${unidadeCarencia}`}
+                    readOnly
+                  />
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold">Dependentes</h4>
-                  <button className="btn-primary" type="button" onClick={addDependente}>Adicionar dependente</button>
+                  <button className="btn-primary" type="button" onClick={addDependente}>
+                    Adicionar dependente
+                  </button>
                 </div>
 
                 <div className="mt-3 grid gap-3">
                   {dependentes.map((d, i) => {
-                    const faixa = encontrarFaixaPorIdade(faixasDep, Number(d.idade || 0))
-                    const isento = isIsento(isencoes, Number(d.idade || 0), d.parentesco)
+                    const faixa = encontrarFaixaPorIdade(
+                      faixasDep,
+                      Number(d.idade || 0)
+                    )
+                    const isento = isIsento(
+                      isencoes,
+                      Number(d.idade || 0),
+                      d.parentesco
+                    )
                     const val = isento ? 0 : Number(faixa?.valor || 0)
                     return (
-                      <div key={d.id || i} className="flex flex-col gap-3 rounded-xl border p-3 md:flex-row md:items-center">
+                      <div
+                        key={d.id || i}
+                        className="flex flex-col gap-3 rounded-xl border p-3 md:flex-row md:items-center dark:border-slate-700"
+                      >
                         <div className="grid flex-1 gap-3 md:grid-cols-3">
                           <div>
                             <label className="label">Parentesco</label>
-                            <select className="input" value={d.parentesco} onChange={e => updDependente(i, { parentesco: e.target.value })}>
-                              {parentescos.map(p => <option key={p} value={p}>{p}</option>)}
+                            <select
+                              className="input"
+                              value={d.parentesco}
+                              onChange={(e) =>
+                                updDependente(i, { parentesco: e.target.value })
+                              }
+                            >
+                              {parentescos.map((p) => (
+                                <option key={p} value={p}>
+                                  {p}
+                                </option>
+                              ))}
                             </select>
                           </div>
                           <div>
                             <label className="label">Idade</label>
-                            <input className="input" type="number" min="0" max="120" value={d.idade} onChange={e => updDependente(i, { idade: Number(e.target.value) })} />
+                            <input
+                              className="input"
+                              type="number"
+                              min="0"
+                              max="120"
+                              value={d.idade}
+                              onChange={(e) =>
+                                updDependente(i, { idade: Number(e.target.value) })
+                              }
+                            />
                           </div>
                           <div>
                             <label className="label">Valor (faixa)</label>
@@ -224,20 +377,35 @@ export default function PlanoDetalhe() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          {isento && <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700">Isento</span>}
-                          <button type="button" className="text-red-600 underline" onClick={() => delDependente(i)}>Remover</button>
+                          {isento && (
+                            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              Isento
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="text-red-600 underline dark:text-red-400"
+                            onClick={() => delDependente(i)}
+                          >
+                            Remover
+                          </button>
                         </div>
                       </div>
                     )
                   })}
                 </div>
 
-                {/* contadores ao vivo */}
-                <div className="mt-3 text-sm text-slate-600">
-                  <div>Dependentes informados: <strong>{dependentes.length}</strong> • Incluídos sem custo: <strong>{numDepsIncl}</strong> • Excedentes: <strong>{extrasCount}</strong></div>
+                {/* contadores */}
+                <div className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                  <div>
+                    Dependentes informados: <strong>{dependentes.length}</strong> •
+                    Incluídos sem custo: <strong>{numDepsIncl}</strong> • Excedentes:{' '}
+                    <strong>{extrasCount}</strong>
+                  </div>
                   {dependentes.length > 0 && (
                     <p className="mt-1 text-xs">
-                      Excedentes são cobrados a <strong>{money(valorIncrementalMensal)}</strong> por mês cada.
+                      Excedentes são cobrados a{' '}
+                      <strong>{money(valorIncrementalMensal)}</strong> por mês cada.
                     </p>
                   )}
                 </div>
@@ -245,21 +413,46 @@ export default function PlanoDetalhe() {
             </div>
           </div>
 
-          {/* Resumo (sticky para conversão) */}
+          {/* Resumo */}
           <div className="card p-6 md:sticky md:top-24">
             <h3 className="mb-3 text-lg font-semibold">Resumo</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Base mensal</span><span>{money(baseMensal)}</span></div>
-              <div className="flex justify-between"><span>Adicional do titular (faixa)</span><span>{money(custoTitularFaixa)}</span></div>
-              <div className="flex justify-between"><span>Dependentes (faixas)</span><span>{money(somaFaixasDep)}</span></div>
-              <div className="flex justify-between"><span>Excedentes ({extrasCount}) × {money(valorIncrementalMensal)}</span><span>{money(custoIncrementalExtras)}</span></div>
+              <div className="flex justify-between">
+                <span>Base mensal</span>
+                <span>{money(baseMensal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Adicional do titular (faixa)</span>
+                <span>{money(custoTitularFaixa)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Dependentes (faixas)</span>
+                <span>{money(somaFaixasDep)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>
+                  Excedentes ({extrasCount}) × {money(valorIncrementalMensal)}
+                </span>
+                <span>{money(custoIncrementalExtras)}</span>
+              </div>
               <hr className="my-2" />
-              <div className="flex justify-between font-semibold"><span>Total mensal</span><span>{money(totalMensal)}</span></div>
-              <div className="flex justify-between"><span>Total anual</span><span>{money(totalAnual)}</span></div>
-              <div className="flex justify-between"><span>Adesão (uma vez)</span><span>{money(valorAdesao)}</span></div>
+              <div className="flex justify-between font-semibold">
+                <span>Total mensal</span>
+                <span>{money(totalMensal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total anual</span>
+                <span>{money(totalAnual)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Adesão (uma vez)</span>
+                <span>{money(valorAdesao)}</span>
+              </div>
             </div>
             <button className="btn-primary mt-4 w-full">Contratar</button>
-            <p className="mt-2 text-center text-xs text-slate-500">Sem fidelidade • Ativação rápida • Atendimento humano</p>
+            <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+              Sem fidelidade • Ativação rápida • Atendimento humano
+            </p>
           </div>
         </div>
       </div>

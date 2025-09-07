@@ -40,6 +40,8 @@ export default function App() {
           <Route path="/contratos" element={<ContratoPage />} />
           <Route path="/contratos/:id/pagamentos" element={<Pagamentos />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/criar-conta" element={<div className="section container-max">Tela de cadastro</div>} />
+          <Route path="/recuperar-senha" element={<div className="section container-max">Recuperar senha</div>} />
           <Route path="/politica-cookies" element={<PoliticaCookies />} />
           <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos-uso" element={<TermosUso />} />

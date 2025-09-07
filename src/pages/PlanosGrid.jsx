@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import api from '@/lib/api.js'
-import useAuth from '@/store/auth.js'
 import PlanoCardPro from '@/components/PlanoCardPro.jsx'
 import { getMensal } from '@/lib/planUtils.js'
 
 /* ---------------- Simulador (PLANO SOMENTE MENSAL) ---------------- */
 function SimuladorModal({ plano, onClose }) {
-  if (!plano) return null
   const [deps, setDeps] = useState(0)
+  if (!plano) return null
 
-  // base mensal normalizada (usa valor_unitario OU valor_anual/12)
   const mensalBase = getMensal(plano)
-
-  // incremental MENSAL = anual ÷ 12
   const incMensal =
     (Number(plano?.valor_incremental ?? plano?.valorIncremental ?? 0) || 0) / 12
 
@@ -23,15 +19,15 @@ function SimuladorModal({ plano, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 dark:text-slate-100">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold">Simular contratação</h3>
-            <p className="text-sm text-slate-600">{plano?.nome}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">{plano?.nome}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-600 hover:text-slate-900"
+            className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             aria-label="Fechar"
           >
             ✕
@@ -49,36 +45,23 @@ function SimuladorModal({ plano, onClose }) {
             className="input"
           />
 
-          <div className="text-xs text-slate-500">
-            Incluídos sem custo: {incluidos}. Custo extra <b>mensal</b> por
-            dependente excedente:{' '}
-            {incMensal.toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            })}
+          <div className="text-xs text-slate-500 dark:text-slate-300">
+            Incluídos sem custo: {incluidos}. Custo extra <b>mensal</b> por dependente excedente:{' '}
+            {incMensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </div>
 
-          <div className="mt-2 rounded-xl bg-slate-50 p-4">
-            <div className="text-sm text-slate-700">
+          <div className="mt-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+            <div className="text-sm text-slate-700 dark:text-slate-200">
               Base mensal:{' '}
-              {mensalBase.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              })}
+              {mensalBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
-            <div className="text-sm text-slate-700">
+            <div className="text-sm text-slate-700 dark:text-slate-200">
               Dependentes extras: {extras} ×{' '}
-              {incMensal.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              })}
+              {incMensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
             <div className="mt-2 text-lg font-semibold">
               Total mensal:{' '}
-              {totalMensal.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              })}
+              {totalMensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </div>
           </div>
         </div>
@@ -86,7 +69,7 @@ function SimuladorModal({ plano, onClose }) {
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-full border border-slate-300 px-4 py-2"
+            className="rounded-full border border-slate-300 px-4 py-2 dark:border-slate-600"
           >
             Cancelar
           </button>
@@ -101,29 +84,19 @@ function SimuladorModal({ plano, onClose }) {
 
 /* ---------------- Página Planos ---------------- */
 export default function PlanosGrid() {
-  const ensureClientToken = useAuth((s) => s.ensureClientToken)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [planos, setPlanos] = useState([])
   const [simPlano, setSimPlano] = useState(null)
 
   useEffect(() => {
-    ;(async () => {
+    (async () => {
+      setLoading(true)
+      setError('')
       try {
-        await ensureClientToken()
-        setError('')
-        let data
-        try {
-          const res = await api.get('/api/v1/planos?status=ATIVO')
-          data = res.data
-        } catch (e) {
-          if (e?.response?.status === 404 || e?.code === 'ERR_NETWORK') {
-            const res2 = await api.get('/api/planos?status=ATIVO')
-            data = res2.data
-          } else {
-            throw e
-          }
-        }
+        // BFF já faz fallback de token
+        const res = await api.get('/api/v1/planos?status=ATIVO')
+        const data = res.data
         const list = Array.isArray(data) ? data : data?.content || []
         setPlanos(list)
       } catch (e) {
@@ -167,7 +140,7 @@ export default function PlanosGrid() {
       <div className="container-max">
         <div className="mb-6">
           <h2 className="text-3xl font-black tracking-tight">Planos</h2>
-          <p className="mt-1 text-slate-600">
+          <p className="mt-1 text-slate-600 dark:text-slate-300">
             Escolha seu plano e conclua a contratação em minutos. Sem complicação.
           </p>
         </div>
@@ -175,12 +148,17 @@ export default function PlanosGrid() {
         {loading && (
           <div className="grid gap-6 md:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-80 animate-pulse rounded-2xl bg-slate-100" />
+              <div
+                key={i}
+                className="h-80 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
+              />
             ))}
           </div>
         )}
 
-        {!loading && error && <p className="text-red-600">{error}</p>}
+        {!loading && error && (
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        )}
 
         <div className="grid gap-6 md:grid-cols-3">
           {planosOrdenados.map((p) => (
