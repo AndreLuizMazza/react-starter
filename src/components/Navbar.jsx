@@ -50,7 +50,7 @@ export default function Navbar() {
               <span className="sr-only">{nome}</span>
             </>
           ) : (
-            <span className="text-lg font-semibold">Progem</span>
+            <span className="text-lg font-semibold"></span>
           )}
         </Link>
 

@@ -2,7 +2,7 @@
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: { extend: {
-    colors: { brand: { 50:'#f0f9ff', 500:'#0ea5e9', 700:'#0369a1', 900:'#0c4a6e' } },
+    colors: { brand: { 50:'#f1f5f9', 500:'#f1f5f9', 700:'#f1f5f9', 900:'#f1f5f9' } },
     boxShadow: { card: '0 10px 25px rgba(0,0,0,0.08)' },
     borderRadius: { card: '1.25rem' }
   } },

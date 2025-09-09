@@ -417,13 +417,7 @@ export default function Home() {
         </div>
         
 
-        {/* CTA flutuante (mobile) */}
-        <div className="md:hidden sticky bottom-3 z-20 mt-6">
-          <div className="mx-auto w-fit rounded-full bg-white/90 shadow-lg ring-1 ring-slate-200 backdrop-blur px-2 py-2 flex items-center gap-2">
-            <Link to="/planos" className="rounded-full border px-4 py-2 text-sm font-medium">Ver planos</Link>
-            <Link to={areaDest} className="btn-primary rounded-full h-9 px-4 text-sm flex items-center">Abrir área</Link>
-          </div>
-        </div>
+        
       </div>
     </section>
   )
