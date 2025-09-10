@@ -34,6 +34,7 @@ const useAuth = create(
     (set, get) => ({
       user: null,
       token: null,
+      refresh_token: null,
 
       /**
        * Realiza login no BFF do app.
@@ -48,8 +49,9 @@ const useAuth = create(
 
         // Normaliza token se existir no payload:
         const token = data?.token ?? data?.access_token ?? data?.jwt ?? null
+        const refresh_token = data?.refresh_token ?? null
 
-        set({ user: data, token })
+        set({ user: data, token, refresh_token })
         return data
       },
 
@@ -57,7 +59,25 @@ const useAuth = create(
        * Limpa sessão local.
        */
       logout: () => {
-        set({ user: null, token: null })
+        set({ user: null, token: null, refresh_token: null })
+      },
+
+      /**
+       * Atualiza o token de acesso usando o refresh token.
+       */
+      refreshToken: async () => {
+        const rt = get().refresh_token
+        if (!rt) throw new Error('missing refresh token')
+        try {
+          const { data } = await api.post('/api/v1/app/auth/refresh', { refresh_token: rt })
+          const token = data?.token ?? data?.access_token ?? data?.jwt ?? null
+          const newRt = data?.refresh_token ?? rt
+          set({ token, refresh_token: newRt })
+          return token
+        } catch (e) {
+          get().logout()
+          throw e
+        }
       },
 
       /**
@@ -71,12 +91,14 @@ const useAuth = create(
       },
       setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
+      setRefreshToken: (refresh_token) => set({ refresh_token }),
     }),
     {
       name: 'auth-store', // chave no localStorage
       partialize: (state) => ({
         user: state.user,
         token: state.token,
+        refresh_token: state.refresh_token,
       }),
       // opcional: versionar e migrar, se necessário
       // version: 1,

@@ -23,4 +23,33 @@ api.interceptors.request.use((cfg) => {
   return cfg
 })
 
+const refreshEndpoint = '/api/v1/app/auth/refresh'
+
+api.interceptors.response.use(
+  (r) => r,
+  async (error) => {
+    const { response, config } = error || {}
+    if (!response) return Promise.reject(error)
+    const status = response.status
+    if (
+      ![401, 403].includes(status) ||
+      config?.url?.includes(refreshEndpoint) ||
+      config._retry
+    ) {
+      return Promise.reject(error)
+    }
+    config._retry = true
+    try {
+      const { default: useAuth } = await import('@/store/auth')
+      const token = await useAuth.getState().refreshToken()
+      if (token) config.headers.Authorization = `Bearer ${token}`
+      return api(config)
+    } catch (e) {
+      const { default: useAuth } = await import('@/store/auth')
+      useAuth.getState().logout()
+      return Promise.reject(e)
+    }
+  }
+)
+
 export default api
