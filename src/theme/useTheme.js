@@ -4,10 +4,15 @@ import { useEffect, useState } from 'react'
 export const THEME_KEY = 'ui_theme' // 'system' | 'light' | 'dark'
 
 function applyTheme(choice) {
-  const body = document.body
-  body.classList.remove('theme-dark', 'theme-light')
-  if (choice === 'dark') body.classList.add('theme-dark')
-  if (choice === 'light') body.classList.add('theme-light')
+  const html = document.documentElement || null
+  const body = document.body || null
+  const targets = [html, body].filter(Boolean)
+
+  for (const el of targets) {
+    el.classList.remove('theme-dark', 'theme-light')
+    if (choice === 'dark') el.classList.add('theme-dark')
+    if (choice === 'light') el.classList.add('theme-light')
+  }
 }
 
 /** Hook controlando tema com persistência e aplicação no <body> */
