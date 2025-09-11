@@ -6,16 +6,16 @@ export default {
     extend: {
       colors: {
         brand: {
-          50:  '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8', // botões
-          800: '#1e40af',
-          900: '#1e3a8a', // hover
+          50:  '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#e5e7eb',
+          400: '#e5e7eb',
+          500: '#e5e7eb', // base neutra
+          600: '#e5e7eb',
+          700: '#e5e7eb', // botões (fallback)
+          800: '#e5e7eb',
+          900: '#e5e7eb', // hover
         },
       },
       boxShadow: { card: '0 10px 25px rgba(0,0,0,0.08)' },
