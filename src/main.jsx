@@ -1,3 +1,4 @@
+// src/main.jsx
 import React from 'react'
 import './theme/initTheme'
 
@@ -6,10 +7,12 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
 
+const Root = (
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <App />
+  </BrowserRouter>
+)
+
 createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
+  import.meta.env.PROD ? <React.StrictMode>{Root}</React.StrictMode> : Root
 )

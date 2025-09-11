@@ -1,23 +1,30 @@
-// src/theme/useTheme.js
 import { useEffect, useState } from 'react'
 
 export const THEME_KEY = 'ui_theme' // 'system' | 'light' | 'dark'
 
 function applyTheme(choice) {
-  const body = document.body
-  body.classList.remove('theme-dark', 'theme-light')
-  if (choice === 'dark') body.classList.add('theme-dark')
-  if (choice === 'light') body.classList.add('theme-light')
+  const html = document.documentElement
+  const mql = window.matchMedia('(prefers-color-scheme: dark)')
+
+  html.classList.remove('dark', 'theme-dark', 'theme-light')
+
+  if (choice === 'dark') {
+    html.classList.add('dark', 'theme-dark')
+  } else if (choice === 'light') {
+    html.classList.add('theme-light')
+  } else {
+    // system
+    if (mql.matches) html.classList.add('dark', 'theme-dark')
+  }
 }
 
-/** Hook controlando tema com persistência e aplicação no <body> */
+/** Hook controlando tema com persistência e aplicação no <html> */
 export function useTheme() {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'system' } catch { return 'system' }
   })
 
   useEffect(() => {
-    // aplica e persiste
     applyTheme(theme)
     try {
       if (theme === 'system') localStorage.removeItem(THEME_KEY)

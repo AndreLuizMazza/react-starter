@@ -1,0 +1,38 @@
+<!-- public/img/placeholder-plano-contrato.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <style>
+    /* Cor padrão (tema claro) */
+    .s { stroke:#64748b }          /* slate-500 */
+    .f { fill:#64748b }
+    /* Tema escuro */
+    @media (prefers-color-scheme: dark) {
+      .s { stroke:#cbd5e1 }        /* slate-300 */
+      .f { fill:#cbd5e1 }
+    }
+  </style>
+
+  <!-- Documento -->
+  <rect x="22" y="14" width="84" height="100" rx="10" class="s" stroke-width="4"/>
+
+  <!-- Cabeçalho do documento (título) -->
+  <rect x="34" y="26" width="60" height="10" rx="5" class="s" stroke-width="4"/>
+
+  <!-- Linhas + checkboxes -->
+  <!-- Linha 1 -->
+  <rect x="34" y="46" width="12" height="12" rx="2.5" class="s" stroke-width="4"/>
+  <path d="M37 52l3 3 6-6" class="s" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="52" y1="52" x2="92" y2="52" class="s" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Linha 2 -->
+  <rect x="34" y="64" width="12" height="12" rx="2.5" class="s" stroke-width="4"/>
+  <path d="M37 70l3 3 6-6" class="s" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="52" y1="70" x2="92" y2="70" class="s" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Linha 3 -->
+  <rect x="34" y="82" width="12" height="12" rx="2.5" class="s" stroke-width="4"/>
+  <path d="M37 88l3 3 6-6" class="s" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="52" y1="88" x2="92" y2="88" class="s" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- “Dobradinha” no topo (opcional, só para dar charme) -->
+  <path d="M96 24c0-5.523-4.477-10-10-10H42" class="s" stroke-width="4" stroke-linecap="round"/>
+</svg>

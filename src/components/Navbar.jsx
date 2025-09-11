@@ -1,4 +1,3 @@
-// src/components/Navbar.jsx
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
@@ -80,12 +79,31 @@ export default function Navbar() {
             )}
           </NavLink>
 
+
           <NavLink to="/memorial" className={linkClass}>
             {({ isActive }) => (
               <>
                 <ActiveBar isActive={isActive} /> Memorial
               </>
             )}
+          </NavLink>
+
+
+
+          <NavLink to="/filiais" className={linkClass}>
+            {({ isActive }) => (
+              <>
+                <ActiveBar isActive={isActive} /> Unidades
+              </>
+            )}
+          </NavLink>
+
+            <NavLink to="/contratos" className={linkClass}>
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> 2° Via
+                </>
+              )}
           </NavLink>
 
           {/* Área do associado (direciona conforme sessão) */}
@@ -141,10 +159,30 @@ export default function Navbar() {
               )}
             </NavLink>
 
+  
+
             <NavLink to="/memorial" className={linkClass}>
               {({ isActive }) => (
                 <>
                   <ActiveBar isActive={isActive} /> Memorial
+                </>
+              )}
+            </NavLink>
+
+          {/* >>> Adicionado no mobile também <<< */}
+            <NavLink to="/filiais" className={linkClass}>
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> Unidades
+                </>
+              )}
+            </NavLink>
+
+
+            <NavLink to="/contratos" className={linkClass}>
+              {({ isActive }) => (
+                <>
+                  <ActiveBar isActive={isActive} /> 2° Via
                 </>
               )}
             </NavLink>

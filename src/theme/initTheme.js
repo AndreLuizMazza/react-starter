@@ -1,22 +1,32 @@
-// src/theme/initTheme.js
-const THEME_KEY = 'ui_theme' // valores: 'system' | 'light' | 'dark'
+const THEME_KEY = 'ui_theme' // 'system' | 'light' | 'dark'
 
 ;(function initTheme() {
   try {
-    // Se preferir, leia aqui também o tema do SO para "system"
-    const choice = localStorage.getItem(THEME_KEY) // null -> 'system'
-    if (!choice) return // 'system': não força nada, deixa o prefers-color-scheme agir
+    const html = document.documentElement
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const choice = localStorage.getItem(THEME_KEY) || 'system'
 
-    const html = document.documentElement || null
-    const body = document.body || null
-    const targets = [html, body].filter(Boolean)
-
-    for (const el of targets) {
-      el.classList.remove('theme-dark', 'theme-light')
-      if (choice === 'dark') el.classList.add('theme-dark')
-      if (choice === 'light') el.classList.add('theme-light')
+    const apply = (mode) => {
+      // removemos marcas antigas e aplicamos padrão Tailwind (.dark no <html>)
+      html.classList.remove('dark', 'theme-dark', 'theme-light')
+      if (mode === 'dark') {
+        html.classList.add('dark', 'theme-dark')
+      } else if (mode === 'light') {
+        html.classList.add('theme-light')
+      } else {
+        // system: segue o SO
+        if (mql.matches) html.classList.add('dark', 'theme-dark')
+      }
     }
-  } catch (_) {
-    // fail-safe: nunca impedir o app de montar
+
+    apply(choice)
+
+    // se mudar o tema do SO e estiver em 'system', reflita isso
+    mql.addEventListener?.('change', () => {
+      const c = localStorage.getItem(THEME_KEY) || 'system'
+      if (c === 'system') apply('system')
+    })
+  } catch {
+    // fail-safe
   }
 })()

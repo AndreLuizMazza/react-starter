@@ -1,4 +1,3 @@
-// src/App.jsx
 import { Routes, Route, Navigate } from 'react-router-dom'
 
 import './styles/theme.css' // CSS do tema (caminho relativo)
@@ -16,11 +15,10 @@ import AreaUsuario from './pages/AreaUsuario.jsx'
 import Pagamentos from './pages/Pagamentos.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import ClubeBeneficios from './pages/ClubeBeneficios.jsx'
-import PoliticaCookies from "@/pages/PoliticaCookies"
-import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade"
-import TermosUso from "@/pages/TermosUso"
-
-// importar o banner
+import PoliticaCookies from '@/pages/PoliticaCookies'
+import PoliticaPrivacidade from '@/pages/PoliticaPrivacidade'
+import TermosUso from '@/pages/TermosUso'
+import Filiais from '@/pages/Filiais.jsx'
 import CookieBanner from '@/components/CookieBanner.jsx'
 
 export default function App() {
@@ -45,6 +43,8 @@ export default function App() {
           <Route path="/politica-cookies" element={<PoliticaCookies />} />
           <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos-uso" element={<TermosUso />} />
+          {/* >>> Corrigido: fechamento da rota <<< */}
+          <Route path="/filiais" element={<Filiais />} />
           <Route
             path="/area"
             element={

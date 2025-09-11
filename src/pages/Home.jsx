@@ -300,13 +300,7 @@ export default function Home() {
         >
           <h1
             className="text-4xl md:text-5xl font-black tracking-tight"
-            style={{
-              backgroundImage: `linear-gradient(90deg, ${dark}, ${base})`,
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
+     >
             Bem-vindo
           </h1>
           <p className="mt-2 text-slate-600">

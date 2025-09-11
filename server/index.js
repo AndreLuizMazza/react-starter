@@ -2,10 +2,23 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import helmet from 'helmet'
+import compression from 'compression'
+import { rateLimit } from 'express-rate-limit'
 
 dotenv.config()
+
+/**
+ * ENV esperadas:
+ * - PORT (opcional)
+ * - NODE_ENV (production | development)
+ * - PROGEM_BASE (ex: https://sandbox-api.progem.com.br)
+ * - PROGEM_TENANT_ID (X-Progem-ID)
+ * - OAUTH_SCOPE
+ * - OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET
+ * - CORS_ORIGINS (lista separada por vírgula)
+ */
 const app = express()
-app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 
 const PORT = process.env.PORT || 8787
@@ -14,8 +27,30 @@ const TENANT_ID = process.env.PROGEM_TENANT_ID
 const OAUTH_SCOPE = process.env.OAUTH_SCOPE || 'read:parceiros read:planos read:contratos read:duplicatas read:dependentes read:unidades read:pessoas'
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID
 const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET
+const isProd = process.env.NODE_ENV === 'production'
 
-// Helpers
+/* ===== Segurança e desempenho ===== */
+app.use(helmet())
+app.use(compression())
+const limiter = rateLimit({ windowMs: 60_000, max: 60 }) // 60 req/min por IP
+app.use(limiter)
+
+/* ===== CORS com whitelist ===== */
+const allowed = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true) // curl/postman/etc
+    if (allowed.length === 0 || allowed.includes(origin)) return cb(null, true)
+    return cb(new Error('Not allowed by CORS'))
+  },
+  credentials: true
+}))
+
+/* ===== Helpers ===== */
 const b64 = (s) => Buffer.from(s).toString('base64')
 
 function injectHeaders(headers = {}) {
@@ -36,7 +71,11 @@ async function readAsJsonOrText(r) {
   try { return JSON.parse(raw) } catch { return raw }
 }
 
-// ===== OAuth2: Client Credentials (Basic + JSON body + X-Progem-ID) =====
+const maskCpf = (cpf) => cpf
+  ? cpf.toString().replace(/\D/g, '').replace(/^(\d{3})\d{5}(\d{3})$/, '$1*****$2')
+  : cpf
+
+/* ===== OAuth2: Client Credentials ===== */
 async function fetchClientToken() {
   if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
     throw new Error('OAUTH_CLIENT_ID/SECRET não configurados')
@@ -54,28 +93,117 @@ async function fetchClientToken() {
   return data
 }
 
+/* ===== Cache de token com lock e retry 401 ===== */
 let cachedToken = null
 let cachedExp = 0
+let inflightPromise = null
+
 async function getClientToken() {
   const now = Math.floor(Date.now() / 1000)
   if (cachedToken && cachedExp - now > 30) return cachedToken
-  const data = await fetchClientToken()
-  cachedToken = data.access_token || data.accessToken
-  cachedExp = Math.floor(Date.now() / 1000) + (data.expires_in || 300)
-  return cachedToken
+
+  if (!inflightPromise) {
+    inflightPromise = (async () => {
+      const data = await fetchClientToken()
+      cachedToken = data.access_token || data.accessToken
+      cachedExp = Math.floor(Date.now() / 1000) + (data.expires_in || 300)
+      inflightPromise = null
+      return cachedToken
+    })().catch(err => { inflightPromise = null; throw err })
+  }
+  return inflightPromise
 }
 
-// ===== Public endpoint p/ frontend obter token de cliente (se quiser usar) =====
-app.post('/auth/client-token', async (req, res) => {
-  try {
-    const data = await fetchClientToken()
-    res.json(data)
-  } catch (e) {
-    res.status(500).json({ error: 'Falha ao obter token do cliente', message: String(e) })
-  }
-})
+/* ===== Dedup/coalescing de requisições GET =====
+   - Coalescemos requisições idênticas por uma pequena janela (default 400ms)
+   - A chave inclui METHOD, URL, Authorization e body (se houver)
+*/
+const _inflightMap = new Map()  // key -> { ts, promise }
+const _miniCache = new Map()    // opcional: key -> { ts, res:{status, body} }
 
-// ===== Login de usuário =====
+function _reqKey(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
+  const auth = (options.headers && options.headers.Authorization) || ''
+  const body = options.body ? String(options.body) : ''
+  return `${method} ${url} | auth:${auth} | bodyhash:${body.length}`
+}
+
+/**
+ * fetchDedup: deduplica requisições idênticas por dedupMs
+ * Pode opcionalmente armazenar resposta por cacheMs (mini-cache in-memory)
+ * Retorna objeto compatível com Response (tem ok, status, text(), json()).
+ */
+async function fetchDedup(url, options = {}, { dedupMs = 400, cacheMs = 0 } = {}) {
+  const key = _reqKey(url, options)
+  const now = Date.now()
+
+  if (cacheMs > 0) {
+    const c = _miniCache.get(key)
+    if (c && (now - c.ts) < cacheMs) {
+      return {
+        ok: c.res.status >= 200 && c.res.status < 300,
+        status: c.res.status,
+        _cached: true,
+        async text() { return c.res.body },
+        async json() { try { return JSON.parse(c.res.body) } catch { return c.res.body } }
+      }
+    }
+  }
+
+  const inFlight = _inflightMap.get(key)
+  if (inFlight && (now - inFlight.ts) < dedupMs) {
+    return inFlight.promise
+  }
+
+  const p = (async () => {
+    const r = await fetch(url, options)
+    const body = await r.text()
+    const res = {
+      ok: r.ok,
+      status: r.status,
+      async text() { return body },
+      async json() { try { return JSON.parse(body) } catch { return body } }
+    }
+    if (cacheMs > 0 && r.ok) _miniCache.set(key, { ts: Date.now(), res: { status: r.status, body } })
+    return res
+  })().finally(() => {
+    setTimeout(() => {
+      const current = _inflightMap.get(key)
+      if (current && current.promise === p) _inflightMap.delete(key)
+    }, dedupMs)
+  })
+
+  _inflightMap.set(key, { ts: now, promise: p })
+  return p
+}
+
+/** Combina client token + dedup + retry 401 (1x) */
+async function fetchWithClientTokenDedupRetry(url, req, { dedupMs = 400, cacheMs = 0 } = {}) {
+  const baseHeaders = injectHeadersFromReq(req)
+  let token = await getClientToken()
+  let r = await fetchDedup(url, { headers: { ...baseHeaders, Authorization: `Bearer ${token}` } }, { dedupMs, cacheMs })
+  if (r.status === 401) {
+    cachedToken = null
+    cachedExp = 0
+    token = await getClientToken()
+    r = await fetchDedup(url, { headers: { ...baseHeaders, Authorization: `Bearer ${token}` } }, { dedupMs, cacheMs })
+  }
+  return r
+}
+
+/* ===== /auth/client-token (somente DEV/LOCAL) ===== */
+if (!isProd) {
+  app.post('/auth/client-token', async (req, res) => {
+    try {
+      const data = await fetchClientToken()
+      res.json(data)
+    } catch (e) {
+      res.status(500).json({ error: 'Falha ao obter token do cliente', message: String(e) })
+    }
+  })
+}
+
+/* ===== Login de usuário ===== */
 app.post('/api/v1/app/auth/login', async (req, res) => {
   try {
     const token = await getClientToken()
@@ -92,10 +220,10 @@ app.post('/api/v1/app/auth/login', async (req, res) => {
   }
 })
 
-// ===== Meu perfil (precisa do Bearer do usuário) =====
+/* ===== Meu perfil (restrito: bearer do usuário) ===== */
 app.get('/api/v1/app/me', async (req, res) => {
   try {
-    const auth = req.headers.authorization // Bearer do usuário
+    const auth = req.headers.authorization
     const r = await fetch(`${BASE}/api/v1/app/me`, {
       headers: injectHeadersFromReq(req, { 'Authorization': auth })
     })
@@ -108,24 +236,14 @@ app.get('/api/v1/app/me', async (req, res) => {
   }
 })
 
-/**
- * ===== Planos =====
- * Fallback automático: se o cliente NÃO enviar Authorization,
- * o BFF usa o client credentials (getClientToken).
- */
+/* ===== Planos (público: client credentials + dedup) ===== */
 app.get('/api/v1/planos', async (req, res) => {
   try {
-    const incomingAuth = req.headers.authorization
-    const bearer = incomingAuth && /^bearer\s+/i.test(incomingAuth)
-      ? incomingAuth
-      : `Bearer ${await getClientToken()}`
-
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
     const url = `${BASE}/api/v1/planos${qs}`
-
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { Authorization: bearer }) })
+    const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400 })
     const data = await readAsJsonOrText(r)
-    console.log('BFF /api/v1/planos -> status', r.status)
+    console.log('BFF /api/v1/planos ->', r.status, r._cached ? '(cached/dedup)' : '')
     if (!r.ok) return res.status(r.status).json(data)
     res.json(data)
   } catch (e) {
@@ -135,15 +253,8 @@ app.get('/api/v1/planos', async (req, res) => {
 
 app.get('/api/v1/planos/:id', async (req, res) => {
   try {
-      const incomingAuth = req.headers.authorization
-    const bearer = incomingAuth && /^bearer\s+/i.test(incomingAuth)
-      ? incomingAuth
-      : `Bearer ${await getClientToken()}`
-      
     const url = `${BASE}/api/v1/planos/${encodeURIComponent(req.params.id)}`
-    const r = await fetch(url, {
-      headers: injectHeadersFromReq(req, { Authorization: bearer }),
-    })
+    const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400 })
     const data = await readAsJsonOrText(r)
     if (!r.ok) return res.status(r.status).json(data)
     res.json(data)
@@ -152,25 +263,15 @@ app.get('/api/v1/planos/:id', async (req, res) => {
   }
 })
 
-
-// ===== Contratos por CPF =====
+/* ===== Contratos por CPF (público: client credentials + dedup; CPF ofuscado no log) ===== */
 app.get('/api/v1/contratos/cpf/:cpf', async (req, res) => {
   try {
-    const incomingAuth = req.headers.authorization
-    const bearer = incomingAuth && /^bearer\s+/i.test(incomingAuth)
-      ? incomingAuth
-      : `Bearer ${await getClientToken()}`
-
-    const url = `${BASE}/api/v1/contratos/cpf/${encodeURIComponent(req.params.cpf)}`
-    console.log('[BFF] GET contratos por CPF →', { url })
-
-    const r = await fetch(url, {
-      headers: injectHeadersFromReq(req, { Authorization: bearer })
-    })
-
+    const cpf = req.params.cpf
+    const url = `${BASE}/api/v1/contratos/cpf/${encodeURIComponent(cpf)}`
+    console.log('[BFF] GET contratos por CPF →', { url: url.replace(cpf, maskCpf(cpf)) })
+    const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400 })
     const data = await readAsJsonOrText(r)
     console.log('[BFF] ← status', r.status)
-
     if (!r.ok) return res.status(r.status).send(data)
     res.status(r.status).send(data)
   } catch (e) {
@@ -179,14 +280,14 @@ app.get('/api/v1/contratos/cpf/:cpf', async (req, res) => {
   }
 })
 
-
-// ===== Débitos do contrato =====
+/* ===== Débitos do contrato (restrito; dedup por Authorization) ===== */
 app.get('/api/v1/contratos/:id/debitos', async (req, res) => {
   try {
     const auth = req.headers.authorization
     const url = `${BASE}/api/v1/contratos/${req.params.id}/debitos`
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { 'Authorization': auth }) })
-    const raw = await r.text(); let data; try { data = JSON.parse(raw) } catch { data = raw }
+    const headers = injectHeadersFromReq(req, { 'Authorization': auth })
+    const r = await fetchDedup(url, { headers }, { dedupMs: 400 })
+    const data = await readAsJsonOrText(r)
     if (!r.ok) return res.status(r.status).send(data)
     res.status(r.status).send(data)
   } catch (e) {
@@ -194,14 +295,15 @@ app.get('/api/v1/contratos/:id/debitos', async (req, res) => {
   }
 })
 
-// ===== Dependentes do contrato =====
+/* ===== Dependentes do contrato (restrito; dedup por Authorization) ===== */
 app.get('/api/v1/contratos/:id/dependentes', async (req, res) => {
   try {
     const auth = req.headers.authorization
     const url = `${BASE}/api/v1/contratos/${req.params.id}/dependentes`
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { 'Authorization': auth }) })
+    const headers = injectHeadersFromReq(req, { 'Authorization': auth })
+    const r = await fetchDedup(url, { headers }, { dedupMs: 400 })
     const data = await readAsJsonOrText(r)
-    console.log('BFF /api/v1/contratos/:id/dependentes ->', r.status, url)
+    console.log('BFF /api/v1/contratos/:id/dependentes ->', r.status, url, r._cached ? '(cached/dedup)' : '')
     if (!r.ok) return res.status(r.status).send(data)
     res.status(r.status).send(data)
   } catch (e) {
@@ -209,34 +311,41 @@ app.get('/api/v1/contratos/:id/dependentes', async (req, res) => {
   }
 })
 
-// ===== Pagamentos / Parcelas do contrato (histórico) =====
+/* ===== Pagamentos (restrito, com fallback p/ client token; dedup por Authorization ou client token) ===== */
 app.get('/api/v1/contratos/:id/pagamentos', async (req, res) => {
   try {
     const incomingAuth = req.headers.authorization
-    const bearer =
-      incomingAuth && /^bearer\s+/i.test(incomingAuth)
-        ? incomingAuth
-        : `Bearer ${await getClientToken()}`
+    const headersBase = injectHeadersFromReq(req)
+    let headers
 
-    const url = `${BASE}/api/v1/contratos/${req.params.id}/pagamentos`
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { Authorization: bearer }) })
-    const data = await readAsJsonOrText(r)
-    if (!r.ok) return res.status(r.status).send(data)
-    res.status(r.status).send(data)
+    if (incomingAuth && /^bearer\s+/i.test(incomingAuth)) {
+      headers = { ...headersBase, Authorization: incomingAuth }
+      const url = `${BASE}/api/v1/contratos/${req.params.id}/pagamentos`
+      const r = await fetchDedup(url, { headers }, { dedupMs: 400 })
+      const data = await readAsJsonOrText(r)
+      if (!r.ok) return res.status(r.status).send(data)
+      return res.status(r.status).send(data)
+    } else {
+      const url = `${BASE}/api/v1/contratos/${req.params.id}/pagamentos`
+      const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400 })
+      const data = await readAsJsonOrText(r)
+      if (!r.ok) return res.status(r.status).send(data)
+      return res.status(r.status).send(data)
+    }
   } catch (e) {
     res.status(500).json({ error: 'Falha ao buscar pagamentos', message: String(e) })
   }
 })
 
-
-// ===== Pagamento do mês (parcela atual) =====
+/* ===== Pagamento do mês (restrito; dedup por Authorization) ===== */
 app.get('/api/v1/contratos/:id/pagamentos/mes', async (req, res) => {
   try {
     const auth = req.headers.authorization
     const url = `${BASE}/api/v1/contratos/${req.params.id}/pagamentos/mes`
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { 'Authorization': auth }) })
+    const headers = injectHeadersFromReq(req, { 'Authorization': auth })
+    const r = await fetchDedup(url, { headers }, { dedupMs: 400 })
     const data = await readAsJsonOrText(r)
-    console.log('BFF /api/v1/contratos/:id/pagamentos/mes ->', r.status, url)
+    console.log('BFF /api/v1/contratos/:id/pagamentos/mes ->', r.status, url, r._cached ? '(cached/dedup)' : '')
     if (!r.ok) return res.status(r.status).send(data)
     res.status(r.status).send(data)
   } catch (e) {
@@ -244,20 +353,14 @@ app.get('/api/v1/contratos/:id/pagamentos/mes', async (req, res) => {
   }
 })
 
-// ===== Locais Parceiros (Clube de Benefícios) =====
+/* ===== Locais Parceiros (público: client credentials + dedup) ===== */
 app.get('/api/v1/locais/parceiros', async (req, res) => {
   try {
-    const incomingAuth = req.headers.authorization
-    const bearer = incomingAuth && /^bearer\s+/i.test(incomingAuth)
-      ? incomingAuth
-      : `Bearer ${await getClientToken()}`
-
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
     const url = `${BASE}/api/v1/locais/parceiros${qs}`
-
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { Authorization: bearer }) })
+    const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400 })
     const data = await readAsJsonOrText(r)
-    console.log('BFF GET /api/v1/locais/parceiros ->', r.status, url)
+    console.log('BFF GET /api/v1/locais/parceiros ->', r.status, url, r._cached ? '(cached/dedup)' : '')
     if (!r.ok) return res.status(r.status).send(data)
     return res.status(r.status).send(data)
   } catch (e) {
@@ -266,7 +369,43 @@ app.get('/api/v1/locais/parceiros', async (req, res) => {
   }
 })
 
-// --- DEBUG: ver tenant atual e headers recebidos ---
+/* ===== Empresa logada (público para o app: client credentials + dedup) ===== */
+app.get('/api/v1/unidades/me', async (req, res) => {
+  try {
+    const url = `${BASE}/api/v1/unidades/me`
+    const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400 })
+    const data = await readAsJsonOrText(r)
+    console.log('[BFF] GET /api/v1/unidades/me ->', r.status, r._cached ? '(cached/dedup)' : '')
+    if (!r.ok) return res.status(r.status).send(data)
+    return res.status(r.status).send(data)
+  } catch (e) {
+    console.error('[BFF] /api/v1/unidades/me ERRO:', e)
+    return res.status(500).json({ error: 'Falha ao buscar unidade atual', message: String(e) })
+  }
+})
+
+
+/* ===== Unidades (todas) — público para o app: client credentials + dedup ===== */
+app.get('/api/v1/unidades/all', async (req, res) => {
+  try {
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
+    const url = `${BASE}/api/v1/unidades/all${qs}`
+
+    // usa injeção de headers (X-Progem-ID, X-Device-ID) + token do cliente
+    const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400, cacheMs: 5_000 })
+    const data = await readAsJsonOrText(r)
+
+    console.log('[BFF] GET /api/v1/unidades/all ->', r.status, url, r._cached ? '(cached/dedup)' : '')
+    if (!r.ok) return res.status(r.status).send(data)
+    return res.status(r.status).send(data)
+  } catch (e) {
+    console.error('[BFF] /api/v1/unidades/all ERRO:', e)
+    return res.status(500).json({ error: 'Falha ao buscar unidades', message: String(e) })
+  }
+})
+
+
+/* ===== DEBUG ===== */
 app.get('/_debug/tenant', (req, res) => {
   const incoming = {
     'x-progem-id': req.header('X-Progem-ID') || req.header('x-progem-id') || null,
@@ -277,28 +416,9 @@ app.get('/_debug/tenant', (req, res) => {
   res.json({ tenantId: TENANT_ID, base: BASE, incoming })
 })
 
-// ===== Empresa logada (unidade atual) =====
-app.get('/api/v1/unidades/me', async (req, res) => {
-  try {
-    const incomingAuth = req.headers.authorization
-    const bearer = incomingAuth && /^bearer\s+/i.test(incomingAuth)
-      ? incomingAuth
-      : `Bearer ${await getClientToken()}`
-
-    const url = `${BASE}/api/v1/unidades/me`
-    const r = await fetch(url, { headers: injectHeadersFromReq(req, { Authorization: bearer }) })
-
-    const raw = await r.text(); let data; try { data = JSON.parse(raw) } catch { data = raw }
-    console.log('[BFF] GET /api/v1/unidades/me ->', r.status)
-    if (!r.ok) return res.status(r.status).send(data)
-    return res.status(r.status).send(data)
-  } catch (e) {
-    console.error('[BFF] /api/v1/unidades/me ERRO:', e)
-    return res.status(500).json({ error: 'Falha ao buscar unidade atual', message: String(e) })
-  }
-})
-
-// Health
+/* ===== Health ===== */
 app.get('/health', (_, res) => res.json({ ok: true }))
 
-app.listen(PORT, () => { console.log(`API proxy on http://localhost:${PORT}`) })
+app.listen(PORT, () => {
+  console.log(`API proxy on http://localhost:${PORT}`)
+})

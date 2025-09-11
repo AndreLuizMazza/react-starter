@@ -1,4 +1,3 @@
-// src/pages/LoginPage.jsx
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import useAuth from '@/store/auth'
