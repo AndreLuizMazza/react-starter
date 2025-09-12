@@ -4,7 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import helmet from 'helmet'
 import compression from 'compression'
-import rateLimit from 'express-rate-limit'   // <- import default (corrige erro)
+import rateLimit from 'express-rate-limit'   // import default
 import nalapideProxy from './nalapide-proxy.js'
 
 dotenv.config()
@@ -18,6 +18,7 @@ dotenv.config()
  * - OAUTH_SCOPE
  * - OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET
  * - CORS_ORIGINS (lista separada por vírgula)
+ * - FRONTEND_URL (ex.: https://react-starter-gamma-three.vercel.app)
  */
 const app = express()
 app.use(express.json())
@@ -30,26 +31,78 @@ const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID
 const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET
 const isProd = process.env.NODE_ENV === 'production'
 
-/* ===== Segurança e desempenho ===== */
+/* ===== Segurança e compressão (antes de tudo, ok) ===== */
 app.use(helmet())
 app.use(compression())
-const limiter = rateLimit({ windowMs: 60_000, max: 60 }) // 60 req/min por IP
+
+/* ====== CORS (deve vir ANTES do rate-limit e das rotas) ====== */
+function parseList(env) {
+  return (env || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+}
+
+const ALLOWLIST = [
+  process.env.FRONTEND_URL,               // domínio principal do front em produção
+  ...parseList(process.env.CORS_ORIGINS), // extras via env
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+].filter(Boolean)
+
+// regex para previews/domínios whitelabel
+const ALLOWLIST_REGEX = [
+  /\.vercel\.app$/i,
+  /\.awis\.com\.br$/i,
+  /\.nalapide\.com$/i
+]
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true // curl/postman/server-to-server
+  if (ALLOWLIST.includes(origin)) return true
+  return ALLOWLIST_REGEX.some(rx => rx.test(origin))
+}
+
+const corsOptionsDelegate = (req, cb) => {
+  const origin = req.headers.origin
+  const allowed = isAllowedOrigin(origin)
+
+  if (!allowed && origin) {
+    console.warn('[CORS] Bloqueado Origin:', origin, '| allowlist:', ALLOWLIST)
+  }
+
+  const opts = allowed
+    ? {
+        origin: true, // ecoa o Origin permitido
+        credentials: true,
+        methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Requested-With',
+          'X-Progem-ID',
+          'X-Device-ID'
+        ],
+        exposedHeaders: ['Content-Length'],
+        maxAge: 86400
+      }
+    : { origin: false }
+
+  cb(null, opts)
+}
+
+// Vary para caches e pré-flight global
+app.use((req, res, next) => { res.setHeader('Vary', 'Origin'); next() })
+app.use(cors(corsOptionsDelegate))
+app.options('*', cors(corsOptionsDelegate)) // libera OPTIONS
+
+/* ===== Rate limit (depois do CORS para não bloquear pré-flight) ===== */
+const limiter = rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false })
 app.use(limiter)
-
-/* ===== CORS com whitelist ===== */
-const allowed = (process.env.CORS_ORIGINS || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean)
-
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true) // curl/postman/etc
-    if (allowed.length === 0 || allowed.includes(origin)) return cb(null, true)
-    return cb(new Error('Not allowed by CORS'))
-  },
-  credentials: true
-}))
 
 /* ===== Monta o BFF do NaLápide ===== */
 app.use('/bff/nalapide', nalapideProxy)
@@ -118,12 +171,9 @@ async function getClientToken() {
   return inflightPromise
 }
 
-/* ===== Dedup/coalescing de requisições GET =====
-   - Coalescemos requisições idênticas por uma pequena janela (default 400ms)
-   - A chave inclui METHOD, URL, Authorization e body (se houver)
-*/
-const _inflightMap = new Map()  // key -> { ts, promise }
-const _miniCache = new Map()    // opcional: key -> { ts, res:{status, body} }
+/* ===== Dedup/coalescing de requisições GET ===== */
+const _inflightMap = new Map()
+const _miniCache = new Map()
 
 function _reqKey(url, options = {}) {
   const method = (options.method || 'GET').toUpperCase()
@@ -132,11 +182,6 @@ function _reqKey(url, options = {}) {
   return `${method} ${url} | auth:${auth} | bodyhash:${body.length}`
 }
 
-/**
- * fetchDedup: deduplica requisições idênticas por dedupMs
- * Pode opcionalmente armazenar resposta por cacheMs (mini-cache in-memory)
- * Retorna objeto compatível com Response (tem ok, status, text(), json()).
- */
 async function fetchDedup(url, options = {}, { dedupMs = 400, cacheMs = 0 } = {}) {
   const key = _reqKey(url, options)
   const now = Date.now()
@@ -267,7 +312,7 @@ app.get('/api/v1/planos/:id', async (req, res) => {
   }
 })
 
-/* ===== Contratos por CPF (público: client credentials + dedup; CPF ofuscado no log) ===== */
+/* ===== Contratos por CPF (público) ===== */
 app.get('/api/v1/contratos/cpf/:cpf', async (req, res) => {
   try {
     const cpf = req.params.cpf
@@ -284,7 +329,7 @@ app.get('/api/v1/contratos/cpf/:cpf', async (req, res) => {
   }
 })
 
-/* ===== Débitos do contrato (restrito; dedup por Authorization) ===== */
+/* ===== Débitos do contrato (restrito) ===== */
 app.get('/api/v1/contratos/:id/debitos', async (req, res) => {
   try {
     const auth = req.headers.authorization
@@ -299,7 +344,7 @@ app.get('/api/v1/contratos/:id/debitos', async (req, res) => {
   }
 })
 
-/* ===== Dependentes do contrato (restrito; dedup por Authorization) ===== */
+/* ===== Dependentes do contrato (restrito) ===== */
 app.get('/api/v1/contratos/:id/dependentes', async (req, res) => {
   try {
     const auth = req.headers.authorization
@@ -315,7 +360,7 @@ app.get('/api/v1/contratos/:id/dependentes', async (req, res) => {
   }
 })
 
-/* ===== Pagamentos (restrito, com fallback p/ client token; dedup por Authorization ou client token) ===== */
+/* ===== Pagamentos (restrito, com fallback para client token) ===== */
 app.get('/api/v1/contratos/:id/pagamentos', async (req, res) => {
   try {
     const incomingAuth = req.headers.authorization
@@ -341,7 +386,7 @@ app.get('/api/v1/contratos/:id/pagamentos', async (req, res) => {
   }
 })
 
-/* ===== Pagamento do mês (restrito; dedup por Authorization) ===== */
+/* ===== Pagamento do mês (restrito) ===== */
 app.get('/api/v1/contratos/:id/pagamentos/mes', async (req, res) => {
   try {
     const auth = req.headers.authorization
@@ -357,7 +402,7 @@ app.get('/api/v1/contratos/:id/pagamentos/mes', async (req, res) => {
   }
 })
 
-/* ===== Locais Parceiros (público: client credentials + dedup) ===== */
+/* ===== Locais Parceiros (público) ===== */
 app.get('/api/v1/locais/parceiros', async (req, res) => {
   try {
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
@@ -373,7 +418,7 @@ app.get('/api/v1/locais/parceiros', async (req, res) => {
   }
 })
 
-/* ===== Empresa logada (público para o app: client credentials + dedup) ===== */
+/* ===== Empresa logada (público para o app) ===== */
 app.get('/api/v1/unidades/me', async (req, res) => {
   try {
     const url = `${BASE}/api/v1/unidades/me`
@@ -388,13 +433,11 @@ app.get('/api/v1/unidades/me', async (req, res) => {
   }
 })
 
-/* ===== Unidades (todas) — público para o app: client credentials + dedup ===== */
+/* ===== Unidades (todas) — público para o app ===== */
 app.get('/api/v1/unidades/all', async (req, res) => {
   try {
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
     const url = `${BASE}/api/v1/unidades/all${qs}`
-
-    // usa injeção de headers (X-Progem-ID, X-Device-ID) + token do cliente
     const r = await fetchWithClientTokenDedupRetry(url, req, { dedupMs: 400, cacheMs: 5_000 })
     const data = await readAsJsonOrText(r)
 
