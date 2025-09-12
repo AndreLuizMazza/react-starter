@@ -94,28 +94,30 @@ export default function MemorialList() {
 
           return (
             <Link key={it.id || it.slug} to={`/memorial/${it.slug || it.id}`}>
-              <div className="rounded-2xl border border-zinc-200/70 p-4 shadow-sm hover:shadow transition bg-white">
+              <div className="rounded-2xl border border-zinc-200/70 dark:border-zinc-700 p-4 shadow-sm hover:shadow transition bg-white dark:bg-zinc-900">
                 <div className="flex items-center gap-3">
                   {it.fotoUrl ? (
                     <img
                       src={it.fotoUrl}
                       alt={nome}
-                      className="h-14 w-14 rounded-full object-cover ring-2 ring-white shadow-sm"
+                      className="h-14 w-14 rounded-full object-cover ring-2 ring-white dark:ring-zinc-900 shadow-sm"
                     />
                   ) : (
-                    <div className="h-14 w-14 rounded-full bg-emerald-100 ring-2 ring-white shadow-sm flex items-center justify-center text-emerald-700 font-semibold">
+                    <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-800 ring-2 ring-white dark:ring-zinc-900 shadow-sm flex items-center justify-center text-emerald-700 dark:text-emerald-200 font-semibold">
                       {nome.slice(0, 1)}
                     </div>
                   )}
 
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-zinc-900 leading-tight truncate">{nome}</h3>
+                    <h3 className="font-semibold leading-tight truncate text-zinc-900 dark:text-zinc-100">
+                      {nome}
+                    </h3>
 
-                    <p className="text-sm text-zinc-600 truncate">
+                    <p className="text-sm truncate text-zinc-600 dark:text-zinc-400">
                       {nasc} – {fale}
                     </p>
 
-                    <p className="mt-0.5 text-xs text-zinc-500 flex items-center gap-1">
+                    <p className="mt-0.5 text-xs flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
                       <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>{views} visualiza{views === 1 ? 'ção' : 'ções'}</span>
                     </p>

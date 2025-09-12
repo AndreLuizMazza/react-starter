@@ -824,3 +824,27 @@ body.theme-dark .card .card-title,
 html.theme-dark .card .card-title{
   color:#e7edf6 !important;
 }
+
+/* Badge de contagem (sem ação) */
+.cta-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:1.5rem; height:1.5rem; padding:0 .4rem;
+  border-radius:9999px; font-size:.75rem; font-weight:700;
+  background: color-mix(in srgb, var(--brand) 16%, #fff 84%);
+  color: color-mix(in srgb, var(--brand-700) 90%, #000 10%);
+}
+.dark .cta-badge{
+  background: color-mix(in srgb, var(--brand) 22%, #0a0a0a 78%);
+  color: var(--brand-50);
+}
+
+/* Divisor vertical sutil entre texto e call-to-action */
+.cta-divider{
+  width:1px; height:36px;
+  background: color-mix(in srgb, var(--brand) 18%, #000 82%);
+  opacity:.15; margin-right:.75rem;
+}
+.dark .cta-divider{
+  background: color-mix(in srgb, var(--brand) 28%, #fff 72%);
+  opacity:.22;
+}
