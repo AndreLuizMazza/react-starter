@@ -20,7 +20,7 @@ import PoliticaPrivacidade from '@/pages/PoliticaPrivacidade'
 import TermosUso from '@/pages/TermosUso'
 import Filiais from '@/pages/Filiais.jsx'
 import CookieBanner from '@/components/CookieBanner.jsx'
-
+import ParceiroDetalhe from '@/pages/ParceiroDetalhe'
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -35,6 +35,7 @@ export default function App() {
           <Route path="/planos" element={<PlanosGrid />} />
           <Route path="/planos/:id" element={<PlanoDetalhe />} />
           <Route path="/beneficios" element={<ClubeBeneficios />} />
+           <Route path="/beneficios/:id" element={<ParceiroDetalhe />} />
           <Route path="/contratos" element={<ContratoPage />} />
           <Route path="/contratos/:id/pagamentos" element={<Pagamentos />} />
           <Route path="/login" element={<LoginPage />} />
