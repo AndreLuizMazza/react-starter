@@ -1,26 +1,17 @@
-// src/lib/authApi.js
 import api from '@/lib/api'
 import { getDeviceId } from '@/store/auth'
 
-/**
- * Converte "dd/MM/yyyy" -> "yyyy-MM-dd"
- */
+/** Converte "dd/MM/yyyy" -> "yyyy-MM-dd" */
 function brToIsoDate(d) {
   if (!d) return null
-  // já vem em yyyy-mm-dd do <input type="date">
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d // já ISO (input type=date)
   const m = d.match(/^(\d{2})[\/.-](\d{2})[\/.-](\d{4})$/)
   if (!m) return null
   const [_, dd, mm, yyyy] = m
   return `${yyyy}-${mm}-${dd}`
 }
 
-/**
- * Normaliza payload do cadastro:
- * - remove máscara de cpf/telefone
- * - converte dataNascimento para ISO yyyy-MM-dd
- * - trim em strings
- */
+/** Normaliza payload de cadastro */
 export function normalizeRegisterPayload(raw) {
   const onlyDigits = (s = '') => s.replace(/\D/g, '')
   return {
@@ -35,9 +26,7 @@ export function normalizeRegisterPayload(raw) {
   }
 }
 
-/**
- * Cadastro do usuário no BFF (o BFF injeta X-Progem-ID e usa client token).
- */
+/** Cadastro do usuário (BFF injeta X-Progem-ID + client token) */
 export async function registerUser(rawPayload) {
   const payload = normalizeRegisterPayload(rawPayload)
   const { data } = await api.post('/api/v1/app/auth/register', payload, {
@@ -46,13 +35,11 @@ export async function registerUser(rawPayload) {
       'X-Device-ID': getDeviceId(),
     },
   })
-  // esperado: { token|accessToken|jwt, userId, nome, email, cpf, ... }
+  // esperado: { token|accessToken|jwt, userId, nome, email, cpf, requiresVerification? }
   return data
 }
 
-/**
- * Atualização do perfil do usuário autenticado.
- */
+/** Atualização de perfil (opcional) */
 export async function patchMyProfile(payload) {
   const { data } = await api.patch('/api/v1/app/me', payload, {
     headers: {

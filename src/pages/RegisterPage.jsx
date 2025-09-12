@@ -1,4 +1,3 @@
-// src/pages/RegisterPage.jsx
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import useTenant from '@/store/tenant'
@@ -17,16 +16,9 @@ const initial = {
 }
 
 const onlyDigits = (s = '') => s.replace(/\D/g, '')
-
-function isValidEmail(email = '') {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())
-}
-function isValidCPF(cpf = '') {
-  return onlyDigits(cpf).length === 11
-}
-function isStrongPassword(s = '') {
-  return s.length >= 6
-}
+const isValidEmail = (e = '') => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e.trim())
+const isValidCPF = (cpf = '') => onlyDigits(cpf).length === 11
+const isStrongPassword = (s = '') => s.length >= 6
 
 export default function RegisterPage() {
   const [form, setForm] = useState(initial)
@@ -35,8 +27,8 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  useTenant() // carrega tenant (BFF injeta X-Progem-ID)
-  const { setUser, setToken } = useAuth(s => ({ setUser: s.setUser, setToken: s.setToken }))
+  useTenant() // garante tenant (BFF injeta X-Progem-ID)
+  const { login } = useAuth(s => ({ login: s.login }))
 
   function onChange(e) {
     const { name, value, type, checked } = e.target
@@ -59,26 +51,29 @@ export default function RegisterPage() {
     setError('')
     const msg = validate()
     if (msg) { setError(msg); return }
+
+    const from = location.state?.from?.pathname || '/area'
+    const identificador = form.email?.trim() || onlyDigits(form.cpf)
+
     try {
       setLoading(true)
-      const data = await registerUser(form)
 
-      // salva sessão e redireciona
-      const token = data?.token ?? data?.accessToken ?? data?.access_token ?? data?.jwt ?? null
-      setToken(token)
-      setUser(data)
+      // 1) cadastra
+      await registerUser(form)
 
-      const from = location.state?.from?.pathname || '/area'
+      // 2) login AUTOMÁTICO sempre após cadastro
+      await login(identificador, form.senha)
+
+      // 3) redireciona já autenticado
       navigate(from, { replace: true })
     } catch (err) {
       console.error(err)
-      // tenta extrair mensagem do backend
       const apiMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        err?.response?.data ||
+        (typeof err?.response?.data === 'string' ? err?.response?.data : null) ||
         'Não foi possível concluir o cadastro.'
-      setError(typeof apiMsg === 'string' ? apiMsg : 'Não foi possível concluir o cadastro.')
+      setError(apiMsg)
     } finally {
       setLoading(false)
     }
@@ -104,8 +99,7 @@ export default function RegisterPage() {
             <input
               name="nome" value={form.nome} onChange={onChange}
               className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2"
-              placeholder="Maria Oliveira"
-              autoComplete="name"
+              placeholder="Maria Oliveira" autoComplete="name"
             />
           </div>
 
@@ -114,8 +108,7 @@ export default function RegisterPage() {
             <input
               type="email" name="email" value={form.email} onChange={onChange}
               className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2"
-              placeholder="maria@exemplo.com"
-              autoComplete="email"
+              placeholder="maria@exemplo.com" autoComplete="email"
             />
           </div>
 
@@ -124,8 +117,7 @@ export default function RegisterPage() {
             <input
               name="cpf" value={form.cpf} onChange={onChange}
               className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2"
-              placeholder="000.000.000-00"
-              inputMode="numeric" maxLength={14}
+              placeholder="000.000.000-00" inputMode="numeric" maxLength={14}
             />
           </div>
 
@@ -134,8 +126,7 @@ export default function RegisterPage() {
             <input
               name="celular" value={form.celular} onChange={onChange}
               className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2"
-              placeholder="(00) 90000-0000"
-              inputMode="tel"
+              placeholder="(00) 90000-0000" inputMode="tel"
             />
           </div>
 
@@ -152,8 +143,7 @@ export default function RegisterPage() {
             <input
               type="password" name="senha" value={form.senha} onChange={onChange}
               className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2"
-              placeholder="Crie uma senha forte"
-              autoComplete="new-password"
+              placeholder="Crie uma senha forte" autoComplete="new-password"
             />
           </div>
         </div>
@@ -161,18 +151,17 @@ export default function RegisterPage() {
         <div className="space-y-2">
           <label className="flex items-start gap-3 text-sm">
             <input type="checkbox" name="aceiteTermos" checked={form.aceiteTermos} onChange={onChange}/>
-            <span>Li e aceito os <a className="underline" href="/termos-uso" target="_blank" rel="noreferrer">Termos de Uso</a>.</span>
+            <span>Li e aceito os <a className="underline" href="/termos" target="_blank" rel="noreferrer">Termos de Uso</a>.</span>
           </label>
           <label className="flex items-start gap-3 text-sm">
             <input type="checkbox" name="aceitePrivacidade" checked={form.aceitePrivacidade} onChange={onChange}/>
-            <span>Concordo com a <a className="underline" href="/politica-privacidade" target="_blank" rel="noreferrer">Política de Privacidade</a>.</span>
+            <span>Concordo com a <a className="underline" href="/privacidade" target="_blank" rel="noreferrer">Política de Privacidade</a>.</span>
           </label>
         </div>
 
         <div className="flex gap-3">
           <button
-            type="submit"
-            disabled={loading}
+            type="submit" disabled={loading}
             className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 bg-emerald-900 text-white hover:opacity-95 disabled:opacity-60"
           >
             {loading ? 'Enviando...' : 'Criar conta'}

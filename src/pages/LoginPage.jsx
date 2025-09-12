@@ -27,6 +27,13 @@ export default function LoginPage() {
     } catch {}
   }, [])
 
+  // Se veio do cadastro e sem token (verificação exigida), pré-preenche o e-mail
+  useEffect(() => {
+    if (location.state?.postRegister && location.state?.email) {
+      setIdent(location.state.email)
+    }
+  }, [location.state])
+
   async function onSubmit(e) {
     e.preventDefault()
     if (!formValido) return
@@ -42,7 +49,6 @@ export default function LoginPage() {
         try { localStorage.removeItem('login_ident') } catch {}
       }
 
-      // ✅ pega a rota de origem se veio de PrivateRoute
       const from = location.state?.from?.pathname || '/area'
       navigate(from, { replace: true })
     } catch (err) {
@@ -56,7 +62,6 @@ export default function LoginPage() {
   return (
     <section className="section">
       <div className="container-max max-w-lg">
-        {/* Cabeçalho */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold tracking-tight">Entrar</h1>
           <p className="text-slate-500 mt-1">
@@ -64,23 +69,22 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
+        {location.state?.postRegister && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-3 py-2 text-sm">
+            Conta criada! Se necessário, confirme seu e-mail e faça login para continuar.
+          </div>
+        )}
+
         <form onSubmit={onSubmit} noValidate className="card p-6 md:p-8 space-y-4 shadow-lg">
-          {/* E-mail/CPF */}
           <div className="space-y-1">
             <label htmlFor="ident" className="font-medium text-slate-700">E-mail ou CPF</label>
             <input
-              id="ident"
-              className="input"
-              placeholder="ex.: joao@email.com ou 000.000.000-00"
-              autoComplete="username"
-              value={identificador}
-              onChange={(e) => setIdent(e.target.value)}
-              aria-invalid={!identValido}
+              id="ident" className="input" placeholder="ex.: joao@email.com ou 000.000.000-00"
+              autoComplete="username" value={identificador}
+              onChange={(e) => setIdent(e.target.value)} aria-invalid={!identValido}
             />
           </div>
 
-          {/* Senha + toggle */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label htmlFor="senha" className="font-medium text-slate-700">Senha</label>
@@ -90,36 +94,24 @@ export default function LoginPage() {
             </div>
             <div className="relative">
               <input
-                id="senha"
-                className="input pr-12"
-                placeholder="Sua senha"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                aria-invalid={!senhaValida}
+                id="senha" className="input pr-12" placeholder="Sua senha"
+                type={showPassword ? 'text' : 'password'} autoComplete="current-password"
+                value={senha} onChange={(e) => setSenha(e.target.value)} aria-invalid={!senhaValida}
               />
               <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
+                type="button" onClick={() => setShowPassword(v => !v)}
                 className="absolute inset-y-0 right-0 px-3 text-slate-500 hover:text-slate-700 focus:outline-none"
-                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
             </div>
           </div>
 
-          {/* Opções */}
           <div className="flex items-center justify-between">
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300"
-                checked={lembrar}
-                onChange={(e) => setLembrar(e.target.checked)}
-              />
+              <input type="checkbox" className="h-4 w-4 rounded border-slate-300"
+                     checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
               Lembrar de mim
             </label>
 
@@ -128,14 +120,12 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Erro */}
           {erro && (
             <div role="alert" className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
               {erro}
             </div>
           )}
 
-          {/* CTA principal */}
           <button
             type="submit"
             className="btn-primary w-full h-11 text-base disabled:opacity-60 disabled:cursor-not-allowed"
@@ -144,18 +134,11 @@ export default function LoginPage() {
             {loading ? 'Entrando…' : 'Entrar'}
           </button>
 
-          {/* Ações secundárias */}
           <div className="grid grid-cols-2 gap-3">
-            <Link
-              to="/criar-conta"
-              className="rounded-full border border-slate-200 h-11 flex items-center justify-center text-sm font-medium hover:bg-slate-50"
-            >
+            <Link to="/criar-conta" className="rounded-full border border-slate-200 h-11 flex items-center justify-center text-sm font-medium hover:bg-slate-50">
               Cadastrar-se
             </Link>
-            <Link
-              to="/recuperar-senha"
-              className="rounded-full border border-slate-200 h-11 flex items-center justify-center text-sm font-medium hover:bg-slate-50"
-            >
+            <Link to="/recuperar-senha" className="rounded-full border border-slate-200 h-11 flex items-center justify-center text-sm font-medium hover:bg-slate-50">
               Recuperar senha
             </Link>
           </div>

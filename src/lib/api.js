@@ -1,15 +1,14 @@
-// src/lib/api.js
 import axios from 'axios'
 
 let tokenProvider = null
 export function setAuthTokenProvider(fn) { tokenProvider = fn }
 
-// usa a URL do BFF da env e remove barra(s) final(is); fallback local
+// usa a URL do BFF e remove barra(s) final(is); fallback local
 const baseURL = (import.meta.env.VITE_BFF_BASE || 'http://localhost:8787').replace(/\/+$/, '')
 
 const api = axios.create({
   baseURL,
-  timeout: 20000,
+  timeout: 90000,
   headers: { Accept: 'application/json' },
 })
 
