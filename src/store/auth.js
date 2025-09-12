@@ -7,7 +7,7 @@ import api, { setAuthTokenProvider } from '@/lib/api'
  * Gera/recupera um identificador do dispositivo para auditoria e segurança.
  * É enviado no header X-Device-ID durante o login.
  */
-function getDeviceId() {
+export function getDeviceId() {
   const k = 'x_device_id'
   let v = null
   try {

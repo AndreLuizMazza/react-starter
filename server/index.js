@@ -405,6 +405,49 @@ app.get('/api/v1/unidades/all', async (req, res) => {
 })
 
 
+
+// POST /api/v1/app/auth/register  →  API real
+app.post('/api/v1/app/auth/register', async (req, res) => {
+  try {
+    const clientToken = await getClientToken()
+    const r = await fetch(`${BASE}/api/v1/app/auth/register`, {
+      method: 'POST',
+      headers: injectHeadersFromReq(req, {
+        'Authorization': `Bearer ${clientToken}`,
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(req.body || {}),
+    })
+    const data = await readAsJsonOrText(r)
+    if (!r.ok) return res.status(r.status).send(data)
+    res.status(201).send(data)
+  } catch (e) {
+    console.error('[BFF] register error', e)
+    res.status(500).json({ error: 'Falha no cadastro', message: String(e) })
+  }
+})
+
+// PATCH /api/v1/app/me  →  API real (usa bearer do usuário)
+app.patch('/api/v1/app/me', async (req, res) => {
+  try {
+    const r = await fetch(`${BASE}/api/v1/app/me`, {
+      method: 'PATCH',
+      headers: injectHeadersFromReq(req, {
+        'Authorization': req.headers.authorization || '',
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(req.body || {}),
+    })
+    const data = await readAsJsonOrText(r)
+    if (!r.ok) return res.status(r.status).send(data)
+    res.send(data)
+  } catch (e) {
+    console.error('[BFF] patch /me error', e)
+    res.status(500).json({ error: 'Falha ao atualizar perfil', message: String(e) })
+  }
+})
+
+
 /* ===== DEBUG ===== */
 app.get('/_debug/tenant', (req, res) => {
   const incoming = {

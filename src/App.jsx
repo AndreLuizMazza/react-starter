@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 
-import './styles/theme.css' // CSS do tema (caminho relativo)
+import './styles/theme.css'
 
 import TenantBootstrapper from '@/components/TenantBootstrapper'
 
@@ -21,6 +21,8 @@ import TermosUso from '@/pages/TermosUso'
 import Filiais from '@/pages/Filiais.jsx'
 import CookieBanner from '@/components/CookieBanner.jsx'
 import ParceiroDetalhe from '@/pages/ParceiroDetalhe'
+import RegisterPage from '@/pages/RegisterPage.jsx'
+
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -35,16 +37,15 @@ export default function App() {
           <Route path="/planos" element={<PlanosGrid />} />
           <Route path="/planos/:id" element={<PlanoDetalhe />} />
           <Route path="/beneficios" element={<ClubeBeneficios />} />
-           <Route path="/beneficios/:id" element={<ParceiroDetalhe />} />
+          <Route path="/beneficios/:id" element={<ParceiroDetalhe />} />
           <Route path="/contratos" element={<ContratoPage />} />
           <Route path="/contratos/:id/pagamentos" element={<Pagamentos />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/criar-conta" element={<div className="section container-max">Tela de cadastro</div>} />
+          <Route path="/criar-conta" element={<RegisterPage />} />
           <Route path="/recuperar-senha" element={<div className="section container-max">Recuperar senha</div>} />
           <Route path="/politica-cookies" element={<PoliticaCookies />} />
           <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos-uso" element={<TermosUso />} />
-          {/* >>> Corrigido: fechamento da rota <<< */}
           <Route path="/filiais" element={<Filiais />} />
           <Route
             path="/area"
