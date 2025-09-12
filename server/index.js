@@ -4,7 +4,8 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import helmet from 'helmet'
 import compression from 'compression'
-import { rateLimit } from 'express-rate-limit'
+import rateLimit from 'express-rate-limit'   // <- import default (corrige erro)
+import nalapideProxy from './nalapide-proxy.js'
 
 dotenv.config()
 
@@ -49,6 +50,9 @@ app.use(cors({
   },
   credentials: true
 }))
+
+/* ===== Monta o BFF do NaLápide ===== */
+app.use('/bff/nalapide', nalapideProxy)
 
 /* ===== Helpers ===== */
 const b64 = (s) => Buffer.from(s).toString('base64')
@@ -384,7 +388,6 @@ app.get('/api/v1/unidades/me', async (req, res) => {
   }
 })
 
-
 /* ===== Unidades (todas) — público para o app: client credentials + dedup ===== */
 app.get('/api/v1/unidades/all', async (req, res) => {
   try {
@@ -403,8 +406,6 @@ app.get('/api/v1/unidades/all', async (req, res) => {
     return res.status(500).json({ error: 'Falha ao buscar unidades', message: String(e) })
   }
 })
-
-
 
 // POST /api/v1/app/auth/register  →  API real
 app.post('/api/v1/app/auth/register', async (req, res) => {
@@ -446,7 +447,6 @@ app.patch('/api/v1/app/me', async (req, res) => {
     res.status(500).json({ error: 'Falha ao atualizar perfil', message: String(e) })
   }
 })
-
 
 /* ===== DEBUG ===== */
 app.get('/_debug/tenant', (req, res) => {

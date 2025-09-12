@@ -1,3 +1,4 @@
+// src/App.jsx
 import { Routes, Route, Navigate } from 'react-router-dom'
 
 import './styles/theme.css'
@@ -23,6 +24,11 @@ import CookieBanner from '@/components/CookieBanner.jsx'
 import ParceiroDetalhe from '@/pages/ParceiroDetalhe'
 import RegisterPage from '@/pages/RegisterPage.jsx'
 
+// Memorial
+import MemorialList from '@/pages/MemorialList.jsx'
+import MemorialDetail from '@/pages/MemorialDetail.jsx'
+import ErrorBoundary from '@/components/ErrorBoundary.jsx'
+
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -32,31 +38,38 @@ export default function App() {
       <Navbar />
 
       <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/planos" element={<PlanosGrid />} />
-          <Route path="/planos/:id" element={<PlanoDetalhe />} />
-          <Route path="/beneficios" element={<ClubeBeneficios />} />
-          <Route path="/beneficios/:id" element={<ParceiroDetalhe />} />
-          <Route path="/contratos" element={<ContratoPage />} />
-          <Route path="/contratos/:id/pagamentos" element={<Pagamentos />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/criar-conta" element={<RegisterPage />} />
-          <Route path="/recuperar-senha" element={<div className="section container-max">Recuperar senha</div>} />
-          <Route path="/politica-cookies" element={<PoliticaCookies />} />
-          <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
-          <Route path="/termos-uso" element={<TermosUso />} />
-          <Route path="/filiais" element={<Filiais />} />
-          <Route
-            path="/area"
-            element={
-              <PrivateRoute>
-                <AreaUsuario />
-              </PrivateRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/planos" element={<PlanosGrid />} />
+            <Route path="/planos/:id" element={<PlanoDetalhe />} />
+            <Route path="/beneficios" element={<ClubeBeneficios />} />
+            <Route path="/beneficios/:id" element={<ParceiroDetalhe />} />
+            <Route path="/contratos" element={<ContratoPage />} />
+            <Route path="/contratos/:id/pagamentos" element={<Pagamentos />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/criar-conta" element={<RegisterPage />} />
+            <Route path="/recuperar-senha" element={<div className="section container-max">Recuperar senha</div>} />
+            <Route path="/politica-cookies" element={<PoliticaCookies />} />
+            <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+            <Route path="/termos-uso" element={<TermosUso />} />
+            <Route path="/filiais" element={<Filiais />} />
+
+            {/* Rotas do Memorial */}
+            <Route path="/memorial" element={<MemorialList />} />
+            <Route path="/memorial/:slug" element={<MemorialDetail />} />
+
+            <Route
+              path="/area"
+              element={
+                <PrivateRoute>
+                  <AreaUsuario />
+                </PrivateRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
 
       {/* Banner de cookies sempre ativo */}
