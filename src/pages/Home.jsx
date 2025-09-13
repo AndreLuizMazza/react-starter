@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useTenant from '@/store/tenant'
 import useAuth from '@/store/auth'
+import ParceirosCTA from '@/components/ParceirosCTA'
 import {
   Layers,
   BadgePercent,
@@ -83,8 +84,9 @@ function usePrimaryColor() {
 
 /* ===== UI ===== */
 function IconBadge({ children }) {
+  // Neutro e elegante, sem cor fixa do tema
   return (
-    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-b from-sky-50 to-sky-100 text-sky-700 ring-1 ring-sky-100 shadow-sm transition-transform duration-200 group-hover:scale-105 group-hover:-translate-y-0.5">
+    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-700 ring-1 ring-slate-200 shadow-sm transition-transform duration-200 group-hover:scale-105 group-hover:-translate-y-0.5 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800">
       {children}
     </span>
   )
@@ -108,7 +110,8 @@ function FeatureCard({ icon, title, desc, to, cta, mounted, delay = 0 }) {
         'hover:-translate-y-[3px] hover:shadow-2xl hover:ring-1 hover:ring-slate-200 hover:bg-slate-50',
         'tilt',
         mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-300',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-300',
+        'dark:hover:bg-slate-800/40 dark:hover:ring-slate-700',
       ].join(' ')}
       style={{ transitionDelay: `${delay}ms` }}
     >
@@ -116,10 +119,10 @@ function FeatureCard({ icon, title, desc, to, cta, mounted, delay = 0 }) {
         <IconBadge>{icon}</IconBadge>
         <div>
           <h3 className="text-lg font-semibold leading-tight">{title}</h3>
-          <p className="mt-1 text-sm text-slate-600">{desc}</p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{desc}</p>
         </div>
       </div>
-      <div className="pt-4">
+      <div className="pt-5">
         <span className="btn-primary inline-flex items-center gap-2 transition-transform duration-150 group-hover:translate-x-0.5">
           {cta} <ArrowRight size={16} />
         </span>
@@ -152,6 +155,8 @@ function GradientGhostBtn({ href, icon, label, base, dark, mounted, delay = 0 })
       style={style}
       className={[
         'inline-flex items-center gap-2 rounded-full border px-4 py-2 font-medium transition-colors duration-500',
+        'border-slate-300 text-slate-700 hover:bg-slate-50',
+        'dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800/60',
         mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
       ].join(' ')}
     >
@@ -163,14 +168,14 @@ function GradientGhostBtn({ href, icon, label, base, dark, mounted, delay = 0 })
 /* ===== pílulas de valor ===== */
 function ValuePills() {
   return (
-    <div className="mt-4 flex flex-wrap justify-center gap-2">
-      <span className="value-pill inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200">
+    <div className="mt-5 flex flex-wrap justify-center gap-2">
+      <span className="value-pill inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
         <IdCard size={14}/> Carteirinha digital
       </span>
-      <span className="value-pill inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200">
+      <span className="value-pill inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
         <QrCode size={14}/> PIX & boletos
       </span>
-      <span className="value-pill inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200">
+      <span className="value-pill inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
         <Gift size={14}/> Clube de benefícios
       </span>
     </div>
@@ -193,9 +198,9 @@ function FaqItem({ q, a, defaultOpen = false }) {
     </details>
   )
 }
-function FaqSection({ base, dark, isLogged, areaDest }) {
+function FaqSection({ isLogged, areaDest }) {
   return (
-    <section className="mt-8 card p-6 md:p-8">
+    <section className="mt-12 md:mt-16 card p-6 md:p-8">
       <h3 className="text-xl font-extrabold flex items-center gap-2">
         <HelpCircle /> Dúvidas frequentes
       </h3>
@@ -204,7 +209,7 @@ function FaqSection({ base, dark, isLogged, areaDest }) {
         <FaqItem
           q="Como acessar a Área do Associado?"
           a={
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Clique em <Link className="underline" to={areaDest}>“Abrir área”</Link>.
               Se não tiver sessão ativa, você será direcionado para o login.
             </p>
@@ -214,7 +219,7 @@ function FaqSection({ base, dark, isLogged, areaDest }) {
         <FaqItem
           q="Esqueci minha senha. O que fazer?"
           a={
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Acesse <Link to="/recuperar-senha" className="underline">Recuperar senha</Link> e
               siga as instruções enviadas ao seu e-mail/WhatsApp cadastrado.
             </p>
@@ -223,7 +228,7 @@ function FaqSection({ base, dark, isLogged, areaDest }) {
         <FaqItem
           q="Como ativar o app no celular?"
           a={
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Abra a loja do seu aparelho e instale o app. Depois, entre com os mesmos dados do site.
               <span className="block mt-2">
                 <a
@@ -262,6 +267,7 @@ function FaqSection({ base, dark, isLogged, areaDest }) {
 }
 
 export default function Home() {
+  const navigate = useNavigate()
   const empresa = useTenant(s => s.empresa)
   const { isAuthenticated, token, user } = useAuth(s => ({
     isAuthenticated: s.isAuthenticated,
@@ -294,23 +300,21 @@ export default function Home() {
         {/* HERO */}
         <header
           className={[
-            'relative text-center mb-4 md:mb-6 transition-all duration-700',
+            'relative text-center mb-6 md:mb-8 transition-all duration-700',
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
           ].join(' ')}
         >
-          <h1
-            className="text-4xl md:text-5xl font-black tracking-tight"
-     >
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight">
             Bem-vindo
           </h1>
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-slate-600 dark:text-slate-300">
             Empresa: <span className="font-semibold">{empresa?.nomeFantasia || '—'}</span>
           </p>
           <ValuePills />
         </header>
 
         {/* FEATURES */}
-        <div className="relative grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="relative grid gap-5 md:gap-6 md:grid-cols-2 lg:grid-cols-4">
           <FeatureCard
             icon={<Layers size={22} />}
             title="Planos"
@@ -352,20 +356,20 @@ export default function Home() {
         {/* APP SECTION */}
         <div
           className={[
-            'relative mt-8 card p-0 overflow-hidden transition-all duration-700',
+            'relative mt-10 md:mt-12 card p-0 overflow-hidden transition-all duration-700',
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
           ].join(' ')}
           style={{ transitionDelay: '320ms' }}
         >
           <div className="grid md:grid-cols-2">
-            <div className="p-6 md:p-8">
+            <div className="p-6 md:p-8 lg:p-10">
               <h2 className="text-2xl font-extrabold">Baixe nosso aplicativo</h2>
-              <p className="mt-2 text-slate-600">
+              <p className="mt-2 text-slate-600 dark:text-slate-300">
                 Tenha carteirinha digital, boletos, PIX e benefícios sempre à mão. Acompanhe seus
                 contratos e receba notificações de vencimentos no celular.
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-wrap gap-3">
                 <GradientGhostBtn
                   href={ANDROID_URL}
                   base={base}
@@ -387,17 +391,17 @@ export default function Home() {
               </div>
 
               {!import.meta.env.VITE_ANDROID_URL && !import.meta.env.VITE_IOS_URL && (
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                   * Links das lojas ainda não configurados. Defina <code>VITE_ANDROID_URL</code> e{' '}
                   <code>VITE_IOS_URL</code> no seu <code>.env</code>.
                 </p>
               )}
             </div>
 
-            <div className="bg-slate-50 flex items-center justify-center p-8">
-              <div className="rounded-2xl border bg-white/70 p-10 text-center shadow-sm">
-                <div className="text-sm font-semibold text-slate-700">App do Associado</div>
-                <div className="mt-1 text-xs text-slate-500">
+            <div className="bg-slate-50 dark:bg-slate-900/40 flex items-center justify-center p-8 lg:p-10">
+              <div className="rounded-2xl border bg-white/70 p-10 text-center shadow-sm dark:bg-slate-900/60 dark:border-slate-800">
+                <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">App do Associado</div>
+                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Carteirinha • Pagamentos • Benefícios
                 </div>
               </div>
@@ -405,13 +409,18 @@ export default function Home() {
           </div>
         </div>
 
-        {/* FAQ */}
-        <div className="faq-dark">
-          <FaqSection base={base} dark={dark} isLogged={isLogged} areaDest={areaDest} />
+        {/* CTA PARCEIROS — versão premium */}
+        <div className="mt-12 md:mt-16">
+          <ParceirosCTA
+            onBecomePartner={() => navigate('/parceiros/inscrever')}
+            whatsappHref="https://wa.me/55SEUNUMERO?text=Quero%20ser%20parceiro"
+          />
         </div>
-        
 
-        
+        {/* FAQ */}
+        <div className="faq-dark mt-12 md:mt-16">
+          <FaqSection isLogged={isLogged} areaDest={areaDest} />
+        </div>
       </div>
     </section>
   )
