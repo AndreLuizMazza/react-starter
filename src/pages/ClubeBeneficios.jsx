@@ -1,10 +1,15 @@
 // src/pages/ClubeBeneficios.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '@/lib/api.js'
 import {
   MapPin, Phone, Mail, Percent, BadgePercent, Search, RotateCcw, ChevronLeft, ChevronRight,
 } from 'lucide-react'
+
+// CTAs compactas
+import PlanosCompactCTA from '@/components/ctas/PlanosCompactCTA'
+import MemorialCompactCTA from '@/components/ctas/MemorialCompactCTA'
+import ParceirosCompactCTA from '@/components/ctas/ParceirosCompactCTA'
 
 const CLUB_PLACEHOLDER =
   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMTYwIiB2aWV3Qm94PSIwIDAgNDAwIDE2MCI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIxNjAiIGZpbGw9IiNmMWY1ZjkiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSI4MCIgcj0iNDYiIGZpbGw9IiNlMmU4ZjAiLz48dGV4dCB4PSIyMDAiIHk9Ijg4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iSW50ZXIsU2Vnb2UgVUksQXJpYWwsIHNhbnMtc2VyaWZiIiBmb250LXNpemU9IjI4IiBmaWxsPSIjNDc1NTY5Ij4lPC90ZXh0Pjwvc3ZnPg=='
@@ -121,6 +126,8 @@ function ParceiroCard({ p }) {
 }
 
 export default function ClubeBeneficios() {
+  const navigate = useNavigate()
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [items, setItems] = useState([])
@@ -208,6 +215,7 @@ export default function ClubeBeneficios() {
   return (
     <section className="section">
       <div className="container-max">
+        {/* Cabeçalho */}
         <div className="mb-6">
           <h1 className="text-3xl font-black tracking-tight">Clube de Benefícios</h1>
           <p className="mt-1 text-slate-600 dark:text-slate-300">
@@ -215,6 +223,7 @@ export default function ClubeBeneficios() {
           </p>
         </div>
 
+        {/* Filtros */}
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative w-full md:max-w-sm">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -249,6 +258,7 @@ export default function ClubeBeneficios() {
           </div>
         </div>
 
+        {/* Lista / estados */}
         {loading && (
           <div className="grid gap-6 md:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -307,6 +317,27 @@ export default function ClubeBeneficios() {
             )}
           </>
         )}
+
+        {/* SEPARADOR + CTAs compactas no final */}
+        <div className="mt-14 md:mt-16 border-t border-slate-200 dark:border-white/10 pt-8 md:pt-10">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+            Aproveite ainda mais os benefícios
+          </h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            <PlanosCompactCTA
+              onPrimary={() => navigate('/planos')}
+              onSecondary={() => navigate('/planos?simular=1')}
+            />
+            <MemorialCompactCTA
+              onPrimary={() => navigate('/memorial')}
+              onSecondary={() => navigate('/memorial/sobre')}
+            />
+            <ParceirosCompactCTA
+              onPrimary={() => navigate('/parceiros/inscrever')}
+              onSecondary={() => window.open('https://wa.me/55SEUNUMERO?text=Quero%20ser%20parceiro', '_blank')}
+            />
+          </div>
+        </div>
       </div>
     </section>
   )
