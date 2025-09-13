@@ -25,11 +25,14 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-/* ===== Trust Proxy seguro =====
+/* ===== Ambiente ===== */
+const isProd = process.env.NODE_ENV === 'production';
+const isVercel = !!process.env.VERCEL;
+
+/* ===== Trust Proxy seguro
    - Em produção atrás de um proxy (Vercel): use TRUST_PROXY=1
    - Em desenvolvimento/local: deixe vazio (false)
 */
-const isProd = process.env.NODE_ENV === 'production';
 const TRUST_PROXY = (process.env.TRUST_PROXY || (isProd ? '1' : '0')).trim();
 if (TRUST_PROXY === '0' || TRUST_PROXY === '' || TRUST_PROXY.toLowerCase() === 'false') {
   app.set('trust proxy', false);
@@ -41,12 +44,12 @@ if (TRUST_PROXY === '0' || TRUST_PROXY === '' || TRUST_PROXY.toLowerCase() === '
 
 const PORT = process.env.PORT || 8787;
 const BASE = (process.env.PROGEM_BASE || 'http://localhost:8082').replace(/\/+$/, '');
-const TENANT_ID = process.env.PROGEM_TENANT_ID;
+const TENANT_ID = process.env.PROGEM_TENANT_ID || '';
 const OAUTH_SCOPE =
   process.env.OAUTH_SCOPE ||
   'read:parceiros read:planos read:contratos read:duplicatas read:dependentes read:unidades read:pessoas';
-const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
+const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || '';
+const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || '';
 
 /* ===== Segurança e compressão ===== */
 app.use(
@@ -106,7 +109,7 @@ const corsOptionsDelegate = (req, cb) => {
   cb(null, opts);
 };
 
-app.use((req, res, next) => {
+app.use((_, res, next) => {
   res.setHeader('Vary', 'Origin');
   next();
 });
@@ -544,6 +547,14 @@ app.get('/_debug/tenant', (req, res) => {
 
 app.get('/health', (_, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => {
-  console.log(`API proxy on http://localhost:${PORT}`);
-});
+/* ===== Execução local vs Vercel =====
+   - Local/dev: sobe servidor na porta
+   - Vercel: exporta o app (Serverless Function usa /api/index.js)
+*/
+if (!isVercel) {
+  app.listen(PORT, () => {
+    console.log(`API proxy on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
