@@ -3,7 +3,7 @@ import express from 'express'
 
 const router = express.Router()
 
-// Lados servidor (.env) — NUNCA exponha no frontend
+// Lado servidor (.env) — NUNCA exponha no frontend
 const API_BASE = (process.env.NALAPIDE_API_BASE || process.env.VITE_NALAPIDE_BASE || '').replace(/\/+$/, '')
 const API_KEY  = process.env.NALAPIDE_API_KEY || process.env.VITE_NALAPIDE_API_KEY || ''
 
@@ -12,11 +12,6 @@ if (!API_KEY)  console.warn('[NaLapide] NALAPIDE_API_KEY ausente. Configure no .
 
 // Log pequeno de boot
 console.log('[NaLapide BFF] base=', API_BASE ? API_BASE : '(ausente)')
-
-router.use((req, _res, next) => {
-  req._query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
-  next()
-})
 
 function short(s, n = 60) {
   if (!s) return ''
@@ -34,14 +29,31 @@ async function forward(req, res, path) {
       return res.status(500).json({ error: 'NALAPIDE_KEY_MISSING', message: 'Configure NALAPIDE_API_KEY no .env (BFF)' })
     }
 
-    const url = `${API_BASE}${path}${req._query || ''}`
+    // Monta URL e query params vindos do cliente
+    const urlObj = new URL(`${API_BASE}${path}`)
+    const params = new URLSearchParams()
+
+    // Copia todos os params do Express (req.query)
+    for (const [k, v] of Object.entries(req.query || {})) {
+      if (Array.isArray(v)) v.forEach(val => params.append(k, String(val)))
+      else if (v != null) params.set(k, String(v))
+    }
+
+    // Regra: na listagem de óbitos (/obitos), se não vier "publico",
+    // forçamos publico=true para retornar apenas registros públicos.
+    if (path === '/obitos' && !params.has('publico')) {
+      params.set('publico', 'true')
+    }
+
+    urlObj.search = params.toString()
+    const url = urlObj.toString()
 
     // multi-tenant opcional
     const tenant = req.headers['x-tenant-slug'] || req.query.tenant || req.body?.tenant
 
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': API_KEY,
+      'Authorization': API_KEY, // ex.: "Bearer abc..."
       ...(tenant ? { 'x-tenant': tenant } : {})
     }
 
