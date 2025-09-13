@@ -1,3 +1,4 @@
+// src/pages/MemorialList.jsx
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { listMemorial } from '@/lib/nalapide'
@@ -60,12 +61,14 @@ export default function MemorialList() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <header className="mb-6 flex items-center justify-between gap-3">
+    // 🔧 alinhar largura às demais páginas
+    <div className="mx-auto w-full max-w-5xl px-3 sm:px-4 py-8">
+      <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-semibold">Memoriais Públicos</h1>
-        <form onSubmit={onSearch} className="flex items-center gap-2">
+
+        <form onSubmit={onSearch} className="flex w-full sm:w-auto items-center gap-2">
           <input
-            className="input input-bordered w-72"
+            className="input input-bordered w-full sm:w-72"
             placeholder="Buscar por nome…"
             value={q}
             onChange={e => setQ(e.target.value)}
@@ -73,7 +76,11 @@ export default function MemorialList() {
           <button className="btn btn-primary" type="submit">
             <Search className="size-4 mr-2" /> Buscar
           </button>
-          <button className="btn" type="button" onClick={() => { setQ(''); setPage(1); load() }}>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => { setQ(''); setPage(1); load() }}
+          >
             <RefreshCcw className="size-4 mr-2" /> Limpar
           </button>
         </form>

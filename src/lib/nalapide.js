@@ -1,3 +1,4 @@
+// src/lib/nalapide.js
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8787'
 const NALAPIDE_BASE = `${BASE}/bff/nalapide`
 
@@ -21,10 +22,7 @@ async function http(url, init) {
 
 export async function listMemorial({ q = '', page = 1, perPage = 12 } = {}) {
   const url = `${NALAPIDE_BASE}/memorial${qs({ q, page, perPage })}`
-  const data = await http(url)
-  const items = data?.items || data?.rows || data?.content || (Array.isArray(data) ? data : [])
-  const total = data?.total || data?.totalElements || items.length || 0
-  return { items, total }
+  return http(url)
 }
 
 export async function getMemorialById(idOrSlug) {
